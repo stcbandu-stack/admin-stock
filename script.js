@@ -1,13 +1,12 @@
 // --- ตั้งค่า Supabase ---
 const SUPABASE_URL = 'https://dcigpisivgpofeljvoph.supabase.co'; 
 const SUPABASE_KEY = 'sb_publishable_ccUnFtL3x-8eV8exjy4oIw__JiDK4VK'; 
-
 const { createClient } = supabase;
 const db = createClient(SUPABASE_URL, SUPABASE_KEY);
 
 let currentUser = null;
 let allItems = []; 
-let allLogs = []; // เพิ่มตัวแปรเก็บ Log สำหรับค้นหา
+let allLogs = []; 
 
 window.onload = async () => {
     checkUser(); 
@@ -18,27 +17,15 @@ window.onload = async () => {
     }
 };
 
-// --- 1. จัดการรายการสินค้า (Grid) ---
+// --- 1. จัดการรายการสินค้า ---
 async function loadItems() {
     const grid = document.getElementById('item-grid');
-    if (grid) {
-        // ใส่ Loading Spinner ระหว่างรอข้อมูล
-        grid.innerHTML = `
-            <div class="text-center col-span-full py-20">
-                <div class="inline-block animate-spin rounded-full h-10 w-10 border-4 border-red-600 border-t-transparent mb-4"></div>
-                <p class="text-gray-400">กำลังดึงข้อมูลสต็อก...</p>
-            </div>`;
-    }
+    if (grid) grid.innerHTML = '<div class="text-center col-span-full py-20 text-gray-400">กำลังโหลดข้อมูล...</div>';
 
-    const { data, error } = await db.from('items')
-        .select('*')
-        .eq('is_active', true)
-        .order('quantity', { ascending: false });
-    
+    const { data, error } = await db.from('items').select('*').eq('is_active', true).order('quantity', { ascending: false });
     if (error) return console.error(error);
-    
     allItems = data;
-    renderItems(data); // เมื่อข้อมูลมาแล้ว ฟังก์ชันนี้จะไปเขียนทับ Spinner เองครับ
+    renderItems(data);
 }
 
 function renderItems(items) {
@@ -50,14 +37,13 @@ function renderItems(items) {
         const isOut = item.quantity <= 0;
         const adminBtns = currentUser ? `
             <div class="flex gap-2 mt-3 pt-3 border-t border-gray-100">
-                <button onclick="openAction(${item.id}, 'RESTOCK')" class="flex-1 py-1 bg-gray-100 hover:bg-gray-200 rounded text-sm">เติม</button>
-                <button onclick="openAction(${item.id}, 'WITHDRAW')" class="flex-1 py-1 bg-black text-white hover:bg-gray-800 rounded text-sm">เบิก</button>
+                <button onclick="openAction(${item.id}, 'RESTOCK')" class="flex-1 py-1 bg-gray-100 rounded text-sm">เติม</button>
+                <button onclick="openAction(${item.id}, 'WITHDRAW')" class="flex-1 py-1 bg-black text-white rounded text-sm">เบิก</button>
             </div>
             <div class="flex gap-2 mt-2">
-                <button onclick="openEditModal(${item.id})" class="flex-1 text-center text-yellow-600 text-xs border border-yellow-600 rounded py-1 hover:bg-yellow-50">แก้ไข</button>
-                <button onclick="deleteItem(${item.id})" class="flex-1 text-center text-red-500 text-xs border border-red-500 rounded py-1 hover:bg-red-50">ลบ</button>
-            </div>
-        ` : '';
+                <button onclick="openEditModal(${item.id})" class="flex-1 text-yellow-600 text-xs border border-yellow-600 rounded py-1">แก้ไข</button>
+                <button onclick="deleteItem(${item.id})" class="flex-1 text-red-500 text-xs border border-red-500 rounded py-1">ลบ</button>
+            </div>` : '';
 
         grid.innerHTML += `
             <div class="bg-white border border-gray-200 rounded-lg overflow-hidden hover:shadow-lg transition">
@@ -69,7 +55,7 @@ function renderItems(items) {
                 </div>
                 <div class="p-4">
                     <h3 class="font-bold text-lg">${item.name}</h3>
-                    <p class="text-gray-500 text-sm h-10 overflow-hidden text-ellipsis">${item.description || '-'}</p>
+                    <p class="text-gray-500 text-sm h-10 overflow-hidden">${item.description || '-'}</p>
                     ${adminBtns}
                 </div>
             </div>`;
@@ -81,7 +67,7 @@ window.filterItems = () => {
     renderItems(allItems.filter(i => i.name.toLowerCase().includes(term) || (i.description || '').toLowerCase().includes(term)));
 };
 
-// --- 2. จัดการประวัติ (Logs) ---
+// --- 2. จัดการประวัติการทำรายการ ---
 async function loadLogs(limit = 10) { 
     const { data, error } = await db.from('logs').select('*').order('created_at', { ascending: false }).limit(limit);
     if (error) return console.error(error);
@@ -95,10 +81,10 @@ function renderLogs(logs) {
     tbody.innerHTML = '';
     logs.forEach(log => {
         const isW = log.action_type === 'WITHDRAW';
-        const date = new Date(log.created_at).toLocaleDateString('th-TH');
+        const displayDate = log.report_date ? new Date(log.report_date).toLocaleDateString('th-TH') : '-';
         tbody.innerHTML += `
-            <tr class="border-b hover:bg-gray-50">
-                <td class="p-3 text-gray-500">${date}</td>
+            <tr class="border-b hover:bg-gray-50 text-xs md:text-sm">
+                <td class="p-3 text-gray-500">${displayDate}</td>
                 <td class="p-3 font-semibold">${log.item_name}</td>
                 <td class="p-3">${isW ? log.user_name : 'Admin'}</td>
                 <td class="p-3 text-gray-500 text-xs">${isW ? log.branch : 'เติมสต็อก'}</td>
@@ -111,22 +97,42 @@ function renderLogs(logs) {
 
 window.filterLogs = () => {
     const term = document.getElementById('log-search')?.value.toLowerCase();
-    if(term) renderLogs(allLogs.filter(l => l.item_name.toLowerCase().includes(term) || (l.user_name || '').toLowerCase().includes(term)));
+    if(term) renderLogs(allLogs.filter(l => l.item_name.toLowerCase().includes(term) || (l.user_name || '').toLowerCase().includes(term) || (l.branch || '').toLowerCase().includes(term)));
 };
 
-// --- 3. ระบบเบิก/เติม/ลบ/แก้ไข (ย่อให้สั้นลง) ---
+// --- 3. ระบบเบิก/เติมสต็อก ---
+window.openAction = (id, type) => {
+    document.getElementById('action-item-id').value = id;
+    document.getElementById('action-type').value = type;
+    document.getElementById('action-amount').value = '';
+    document.getElementById('action-date').value = new Date().toISOString().split('T')[0];
+    document.getElementById('action-title').innerText = type === 'RESTOCK' ? 'เติมสต็อค' : 'เบิกของ';
+    
+    if(type === 'WITHDRAW') document.getElementById('withdraw-fields').classList.remove('hidden');
+    else document.getElementById('withdraw-fields').classList.add('hidden');
+    toggleModal('modal-action', true);
+}
+
 async function submitAction() {
     const id = document.getElementById('action-item-id').value;
     const type = document.getElementById('action-type').value;
     const amount = parseInt(document.getElementById('action-amount').value);
-    if(!amount) return alert('ใส่จำนวนด้วยครับ');
+    const reportDate = document.getElementById('action-date').value;
+
+    if(!amount || !reportDate) return alert('ใส่จำนวนและวันที่ด้วยครับ');
 
     const { data: item } = await db.from('items').select('*').eq('id', id).single();
     let newQty = type === 'WITHDRAW' ? item.quantity - amount : item.quantity + amount;
     if (type === 'WITHDRAW' && item.quantity < amount) return alert('ของไม่พอ!');
 
     await db.from('items').update({ quantity: newQty }).eq('id', id);
-    await db.from('logs').insert({ item_id: id, item_name: item.name, action_type: type, amount: amount, balance_after: newQty, user_name: document.getElementById('action-name').value || 'Admin', branch: document.getElementById('action-branch').value || '-', note: document.getElementById('action-note').value });
+    await db.from('logs').insert({
+        item_id: id, item_name: item.name, action_type: type, amount: amount, 
+        balance_after: newQty, report_date: reportDate,
+        user_name: document.getElementById('action-name').value || 'Admin',
+        branch: document.getElementById('action-branch').value || '-',
+        note: document.getElementById('action-note').value
+    });
 
     alert('เรียบร้อย!');
     toggleModal('modal-action', false);
@@ -134,247 +140,80 @@ async function submitAction() {
     loadLogs(document.getElementById('item-grid') ? 5 : 50);
 }
 
-async function loadLogs(limit = 10) { 
-    const { data, error } = await db.from('logs').select('*').order('created_at', { ascending: false }).limit(limit);
-    if (error) return console.error(error);
-
-    const tbody = document.getElementById('log-table-body');
-    if (!tbody) return; 
-    
-    tbody.innerHTML = ''; // ล้างข้อมูลเก่าก่อนโหลดใหม่
-
-    // พี่ลืมบรรทัดข้างล่างนี้ครับ (ลูป foreach)
-    data.forEach(log => {
-        const isWithdraw = log.action_type === 'WITHDRAW';
-        const date = new Date(log.created_at).toLocaleDateString('th-TH');
-        
-        tbody.innerHTML += `
-            <tr class="border-b hover:bg-gray-50">
-                <td class="p-3 text-gray-500">${date}</td>
-                <td class="p-3 font-semibold">${log.item_name}</td>
-                <td class="p-3">${isWithdraw ? log.user_name : 'Admin'}</td>
-                <td class="p-3 text-gray-500 text-xs">${isWithdraw ? log.branch : 'เติมสต็อก'}</td>
-                <td class="p-3 text-gray-400 italic">${log.note || '-'}</td>
-                <td class="p-3 text-right font-bold ${isWithdraw ? 'text-red-600' : 'text-green-600'}">
-                    ${isWithdraw ? '-' : '+'}${log.amount}
-                </td>
-                <td class="p-3 text-right font-mono font-bold text-blue-600 bg-blue-50">
-                    ${log.balance_after !== null ? log.balance_after : '-'}
-                </td>
-            </tr>
-        `;
-    });
-}
-
-
-// --- 2. ฟังก์ชันจัดการระบบ ---
-
-// ล็อกอิน
+// --- 4. ฟังก์ชันพื้นฐานอื่นๆ (Auth / Modal / CRUD) ---
 async function handleLogin() {
     const email = document.getElementById('login-email').value;
     const pass = document.getElementById('login-pass').value;
     const { data, error } = await db.auth.signInWithPassword({ email, password: pass });
-    
-    if (error) alert('อีเมลหรือรหัสผ่านผิด');
-    else {
-        currentUser = data.user;
-        toggleModal('modal-login', false);
-        checkUser(); 
-        loadItems(); 
-    }
+    if (error) alert('รหัสผ่านผิด');
+    else { currentUser = data.user; checkUser(); loadItems(); toggleModal('modal-login', false); }
 }
 
-// ตรวจสอบสถานะ User
 async function checkUser() {
     const { data: { session } } = await db.auth.getSession();
     currentUser = session?.user;
-
-    const authDiv = document.getElementById('auth-section');
-    const adminTool = document.getElementById('admin-toolbar');
-
-    if (currentUser) {
-        authDiv.innerHTML = `<button onclick="logout()" class="text-red-600 text-sm font-bold">ออกจากระบบ</button>`;
-        if(adminTool) adminTool.classList.remove('hidden');
-    } else {
-        authDiv.innerHTML = `<button onclick="toggleModal('modal-login', true)" class="bg-black text-white px-3 py-1 rounded text-sm">Staff Login</button>`;
-        if(adminTool) adminTool.classList.add('hidden');
+    document.getElementById('auth-section').innerHTML = currentUser ? `<button onclick="logout()" class="text-red-600 font-bold">ออกจากระบบ</button>` : `<button onclick="toggleModal('modal-login', true)" class="bg-black text-white px-3 py-1 rounded text-sm">Staff Login</button>`;
+    if(document.getElementById('admin-toolbar')) {
+        if(currentUser) document.getElementById('admin-toolbar').classList.remove('hidden');
+        else document.getElementById('admin-toolbar').classList.add('hidden');
     }
 }
 
-async function logout() {
-    await db.auth.signOut();
-    checkUser();
-    if(document.getElementById('item-grid')) loadItems();
-}
+async function logout() { await db.auth.signOut(); checkUser(); loadItems(); }
 
-// เปิดหน้าต่าง เบิก/เติม
-window.openAction = (id, type) => {
-    document.getElementById('action-item-id').value = id;
-    document.getElementById('action-type').value = type;
-    document.getElementById('action-title').innerText = type === 'RESTOCK' ? 'เติมสต็อค' : 'เบิกของ';
-    
-    if(type === 'WITHDRAW') document.getElementById('withdraw-fields').classList.remove('hidden');
-    else document.getElementById('withdraw-fields').classList.add('hidden');
+window.toggleModal = (id, show) => { const el = document.getElementById(id); if(show) el.classList.remove('hidden'); else el.classList.add('hidden'); }
 
-    toggleModal('modal-action', true);
-}
-
-// ยืนยันการ เบิก/เติม
-async function submitAction() {
-    const id = document.getElementById('action-item-id').value;
-    const type = document.getElementById('action-type').value;
-    const amount = parseInt(document.getElementById('action-amount').value);
-
-    if(!amount) return alert('ใส่จำนวนด้วยครับ');
-
-    const { data: item } = await db.from('items').select('*').eq('id', id).single();
-    
-    let newQty = item.quantity;
-    if (type === 'WITHDRAW') {
-        if (item.quantity < amount) return alert('ของไม่พอ!');
-        newQty -= amount;
-    } else {
-        newQty += amount;
-    }
-
-    await db.from('items').update({ quantity: newQty }).eq('id', id);
-
-await db.from('logs').insert({
-    item_id: id,
-    item_name: item.name,
-    action_type: type,
-    amount: amount,
-    balance_after: newQty, // เพิ่มบรรทัดนี้เพื่อบันทึกยอดคงเหลือหลังทำรายการ
-    user_name: document.getElementById('action-name').value || 'Admin',
-    branch: document.getElementById('action-branch').value || '-',
-    note: document.getElementById('action-note').value
-});
-
-    alert('เรียบร้อย!');
-    toggleModal('modal-action', false);
-    loadItems();
-    loadLogs(document.getElementById('item-grid') ? 5 : 50);
-}
-
-// เพิ่มสินค้าใหม่ (แก้เรื่องชื่อไฟล์ภาษาไทยแล้ว)
-async function addItem() {
-    const name = document.getElementById('add-name').value;
-    const qty = document.getElementById('add-qty').value;
-    const file = document.getElementById('add-image').files[0];
-
-    if(!name || !qty) return alert('กรอกข้อมูลให้ครบนะ');
-
-    let imageUrl = '';
-    if(file) {
-        // ตั้งชื่อไฟล์ใหม่เป็นตัวเลข (กัน error ภาษาไทย)
-        const fileExt = file.name.split('.').pop();
-        const fileName = `item-${Date.now()}.${fileExt}`;
-        
-        const { error } = await db.storage.from('item-images').upload(fileName, file);
-        if(!error) {
-            const { data } = db.storage.from('item-images').getPublicUrl(fileName);
-            imageUrl = data.publicUrl;
-        }
-    }
-
-    await db.from('items').insert({
-        name: name,
-        description: document.getElementById('add-desc').value,
-        quantity: qty,
-        image_url: imageUrl
-    });
-
-    alert('เพิ่มสินค้าแล้ว');
-    toggleModal('modal-add', false);
-    loadItems();
-}
-
-// ลบสินค้า
-window.deleteItem = async (id) => {
-    if(confirm('ลบจริงหรอ?')) {
-        await db.from('items').update({ is_active: false }).eq('id', id);
-        loadItems();
-    }
-}
-
-// เปิดหน้าต่างแก้ไข
 window.openEditModal = (id) => {
     const item = allItems.find(x => x.id === id);
     if(!item) return;
-
     document.getElementById('edit-id').value = item.id;
     document.getElementById('edit-name').value = item.name;
     document.getElementById('edit-desc').value = item.description || '';
-    document.getElementById('edit-image').value = ''; 
-
     toggleModal('modal-edit', true);
 }
 
-// บันทึกการแก้ไข (แก้เรื่องชื่อไฟล์ภาษาไทยแล้ว)
 window.submitEdit = async () => {
     const id = document.getElementById('edit-id').value;
     const name = document.getElementById('edit-name').value;
     const desc = document.getElementById('edit-desc').value;
     const file = document.getElementById('edit-image').files[0];
-
-    if(!name) return alert('ชื่อห้ามว่างนะครับ');
-
-    let updateData = { name: name, description: desc };
+    let updateData = { name, description: desc };
 
     if (file) {
-        // ตั้งชื่อไฟล์ใหม่เป็นตัวเลข (กัน error ภาษาไทย)
-        const fileExt = file.name.split('.').pop();
-        const fileName = `edit-${Date.now()}.${fileExt}`;
-
-        const { error: uploadError } = await db.storage.from('item-images').upload(fileName, file);
-        if (uploadError) return alert('อัปโหลดรูปไม่ผ่าน: ' + uploadError.message);
-
-        const { data } = db.storage.from('item-images').getPublicUrl(fileName);
-        updateData.image_url = data.publicUrl;
+        const fileName = `edit-${Date.now()}.${file.name.split('.').pop()}`;
+        await db.storage.from('item-images').upload(fileName, file);
+        updateData.image_url = db.storage.from('item-images').getPublicUrl(fileName).data.publicUrl;
     }
-
-    const { error } = await db.from('items').update(updateData).eq('id', id);
-
-    if (error) alert('แก้ไม่ได้แฮะ: ' + error.message);
-    else {
-        alert('แก้ไขเรียบร้อย!');
-        toggleModal('modal-edit', false);
-        loadItems();
-    }
+    await db.from('items').update(updateData).eq('id', id);
+    alert('แก้ไขแล้ว'); toggleModal('modal-edit', false); loadItems();
 }
 
-// เครื่องมือ เปิด/ปิด หน้าต่าง
-window.toggleModal = (id, show) => {
-    const el = document.getElementById(id);
-    if(show) el.classList.remove('hidden');
-    else el.classList.add('hidden');
+async function addItem() {
+    const name = document.getElementById('add-name').value;
+    const qty = document.getElementById('add-qty').value;
+    const file = document.getElementById('add-image').files[0];
+    let imageUrl = '';
+    if(file) {
+        const fileName = `item-${Date.now()}.${file.name.split('.').pop()}`;
+        await db.storage.from('item-images').upload(fileName, file);
+        imageUrl = db.storage.from('item-images').getPublicUrl(fileName).data.publicUrl;
+    }
+    await db.from('items').insert({ name, description: document.getElementById('add-desc').value, quantity: qty, image_url: imageUrl });
+    alert('เพิ่มแล้ว'); toggleModal('modal-add', false); loadItems();
 }
+
+window.deleteItem = async (id) => { if(confirm('จะลบจริงหรอ?')) { await db.from('items').update({ is_active: false }).eq('id', id); loadItems(); } }
 
 window.exportLogsToCSV = async () => {
-    const { data, error } = await db.from('logs').select('*').order('created_at', { ascending: false });
-    if (error) return alert('ไม่สามารถดึงข้อมูลเพื่อ Export ได้');
-
-    let csvContent = "\uFEFF"; 
-    csvContent += "วันที่,รายการสินค้า,ผู้ทำรายการ,สาขา,หมายเหตุ,จำนวน,ยอดคงเหลือ\n";
-
+    const { data } = await db.from('logs').select('*').order('created_at', { ascending: false });
+    let csvContent = "\uFEFFวันที่,รายการสินค้า,ผู้ทำรายการ,สาขา,หมายเหตุ,จำนวน,ยอดคงเหลือ\n";
     data.forEach(log => {
-        const date = new Date(log.created_at).toLocaleDateString('th-TH');
-        const isWithdraw = log.action_type === 'WITHDRAW';
-        const user = isWithdraw ? log.user_name : 'Admin';
-        const branch = isWithdraw ? log.branch : 'เติมสต็อก';
-        const amount = (isWithdraw ? '-' : '+') + log.amount;
-        const note = (log.note || '-').replace(/,/g, ' '); 
-        const balance = log.balance_after !== null ? log.balance_after : '-';
-
-        csvContent += `"${date}","${log.item_name}","${user}","${branch}","${note}","${amount}","${balance}"\n`;
+        const date = log.report_date ? new Date(log.report_date).toLocaleDateString('th-TH') : '-';
+        const isW = log.action_type === 'WITHDRAW';
+        csvContent += `"${date}","${log.item_name}","${isW ? log.user_name : 'Admin'}","${isW ? log.branch : 'เติมสต็อก'}","${(log.note || '-').replace(/,/g, ' ')}","${(isW ? '-' : '+') + log.amount}","${log.balance_after ?? '-'}"\n`;
     });
-
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
-    link.setAttribute("href", url);
-    link.setAttribute("download", `stock_history_${new Date().toLocaleDateString('th-TH')}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    link.setAttribute("href", URL.createObjectURL(new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })));
+    link.setAttribute("download", `stock_report_${new Date().toLocaleDateString('th-TH')}.csv`);
+    document.body.appendChild(link); link.click(); document.body.removeChild(link);
 };
