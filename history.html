@@ -52,37 +52,33 @@
     </div>
 </div>
 
-<table class="w-full text-left text-sm">
-    <table class="w-full text-left text-sm">
-    <thead class="bg-gray-100 text-gray-700 uppercase tracking-wider">
-<tr>
-    <th class="p-3">วันที่</th>
-    <th class="p-3">รายการ</th>
-    <th class="p-3">ผู้ทำรายการ</th>
-    <th class="p-3">สาขา</th>
-    <th class="p-3">หมายเหตุ</th>
-    <th class="p-3 text-right">จำนวน</th>
-    <th class="p-3 text-right">คงเหลือ</th> </tr>
-    </thead>
-    <tbody id="log-table-body">
-        </tbody>
-</table>
-
 <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-    <table class="w-full text-left text-sm">
-        <tbody id="log-table-body"></tbody>
-    </table>
+    <div class="overflow-x-auto">
+        <table class="w-full text-left text-sm">
+            <thead class="bg-gray-100 text-gray-700 uppercase tracking-wider">
+                <tr>
+                    <th class="p-3">วันที่</th>
+                    <th class="p-3">รายการ</th>
+                    <th class="p-3">ผู้ทำรายการ</th>
+                    <th class="p-3">สาขา</th>
+                    <th class="p-3">หมายเหตุ</th>
+                    <th class="p-3 text-right">จำนวน</th>
+                    <th class="p-3 text-right">คงเหลือ</th> 
+                </tr>
+            </thead>
+            <tbody id="log-table-body">
+                </tbody>
+        </table>
+    </div>
     
     <div class="bg-gray-50 p-4 border-t border-gray-100 flex justify-between items-center">
         <span class="text-xs text-gray-500 font-bold" id="page-info">กำลังโหลด...</span>
         <div class="flex gap-2">
-            <button onclick="changePage(-1)" id="prev-btn" class="px-4 py-1 bg-white border rounded shadow-sm text-gray-400 disabled:opacity-50"><i class="fa-solid fa-chevron-left"></i></button>
-            <button onclick="changePage(1)" id="next-btn" class="px-4 py-1 bg-white border rounded shadow-sm text-gray-400 disabled:opacity-50"><i class="fa-solid fa-chevron-right"></i></button>
+            <button onclick="changePage(-1)" id="prev-btn" class="px-4 py-1 bg-white border rounded shadow-sm text-gray-400 disabled:opacity-50 hover:bg-gray-50 transition"><i class="fa-solid fa-chevron-left"></i></button>
+            <button onclick="changePage(1)" id="next-btn" class="px-4 py-1 bg-white border rounded shadow-sm text-gray-400 disabled:opacity-50 hover:bg-gray-50 transition"><i class="fa-solid fa-chevron-right"></i></button>
         </div>
     </div>
 </div>
-        </div>
-    </div>
 
     <div id="modal-login" class="fixed inset-0 bg-black/50 hidden flex items-center justify-center z-50">
         <div class="bg-white p-6 rounded-lg w-80 shadow-2xl">
