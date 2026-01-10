@@ -219,17 +219,122 @@ window.deleteItem = (id) => {
 };
 
 window.exportLogsToCSV = async () => {
-    const { data } = await db.from('logs').select('*').order('created_at', { ascending: false });
-    if(!data.length) return showToast('ไม่มีข้อมูลให้ Export', 'info');
+    // 1. ดึงค่า Filter จากหน้าจอมาใช้
+    const month = document.getElementById('filter-month')?.value;
+    const branch = document.getElementById('filter-branch')?.value;
+
+    showToast('กำลังเตรียมไฟล์ข้อมูล...', 'info');
+
+    // 2. เริ่มสร้าง Query แบบเดียวกับ loadLogs แต่ไม่เอา range (เพราะจะเอาทั้งหมดที่กรอง)
+    let query = db.from('logs').select('*');
+
+    if (month) {
+        const year = new Date().getFullYear(); // 2026
+        query = query.gte('report_date', `${year}-${month}-01`).lte('report_date', `${year}-${month}-31`);
+    }
+
+    if (branch) {
+        query = query.ilike('branch', `%${branch}%`);
+    }
+
+    const { data, error } = await query.order('created_at', { ascending: false });
+
+    if (error || !data.length) return showToast('ไม่พบข้อมูลตามที่กรองไว้', 'warning');
+
+    // 3. แปลงข้อมูลเป็น CSV
     let csvContent = "\uFEFFวันที่,รายการสินค้า,ผู้ทำรายการ,สาขา,หมายเหตุ,จำนวน,ยอดคงเหลือ\n";
     data.forEach(log => {
         const date = log.report_date ? new Date(log.report_date).toLocaleDateString('th-TH') : '-';
         const isW = log.action_type === 'WITHDRAW';
-        csvContent += `"${date}","${log.item_name}","${isW ? log.user_name : 'Admin'}","${isW ? log.branch : 'เติมสต็อก'}","${(log.note || '-').replace(/,/g, ' ')}","${(isW ? '-' : '+') + log.amount}","${log.balance_after ?? '-'}"\n`;
+        const user = isW ? log.user_name : 'Admin';
+        const branchCol = isW ? log.branch : 'เติมสต็อก';
+        const amount = (isW ? '-' : '+') + log.amount;
+        const note = (log.note || '-').replace(/,/g, ' '); 
+        const balance = log.balance_after ?? '-';
+
+        csvContent += `"${date}","${log.item_name}","${user}","${branchCol}","${note}","${amount}","${balance}"\n`;
     });
+
+    // 4. สร้าง Link ดาวน์โหลด
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
-    link.setAttribute("href", URL.createObjectURL(new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })));
-    link.setAttribute("download", `stock_report_${new Date().toLocaleDateString('th-TH')}.csv`);
-    document.body.appendChild(link); link.click(); document.body.removeChild(link);
-    showToast('ดาวน์โหลดรายงานแล้ว', 'success');
+    link.setAttribute("href", url);
+    
+    // ตั้งชื่อไฟล์ตาม Filter ที่เลือก
+    const fileName = `stock_report_${month ? 'Month' + month : 'All'}_${new Date().toLocaleDateString('th-TH')}.csv`;
+    link.setAttribute("download", fileName);
+    
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    
+    showToast('ส่งออกข้อมูลสำเร็จแล้ว', 'success');
+};
+
+let currentPage = 0;
+const pageSize = 25; // แสดงหน้าละ 25 รายการ
+
+// แก้ไขฟังก์ชัน loadLogs ให้ฉลาดขึ้น
+async function loadLogs() {
+    const tbody = document.getElementById('log-table-body');
+    if (tbody) tbody.innerHTML = '<tr><td colspan="7" class="p-10 text-center text-gray-400 animate-pulse font-bold">กำลังดึงข้อมูลประวัติ...</td></tr>';
+
+    const month = document.getElementById('filter-month')?.value;
+    const branch = document.getElementById('filter-branch')?.value;
+
+    let query = db.from('logs').select('*', { count: 'exact' });
+
+    // 1. กรองตามเดือน (ถ้าเลือก)
+    if (month) {
+        const year = new Date().getFullYear(); // ปีปัจจุบัน 2026
+        const startDate = `${year}-${month}-01`;
+        const endDate = `${year}-${month}-31`;
+        query = query.gte('report_date', startDate).lte('report_date', endDate);
+    }
+
+    // 2. กรองตามสาขา (ถ้าพิมพ์)
+    if (branch) {
+        query = query.ilike('branch', `%${branch}%`);
+    }
+
+    // 3. ทำ Pagination (ดึงข้อมูลตามช่วงหน้า)
+    const from = currentPage * pageSize;
+    const to = from + pageSize - 1;
+    
+    const { data, error, count } = await query
+        .order('created_at', { ascending: false })
+        .range(from, to);
+
+    if (error) return console.error(error);
+    
+    allLogs = data;
+    renderLogs(data);
+    updatePaginationUI(count);
+}
+
+// อัปเดตสถานะปุ่มและเลขหน้า
+function updatePaginationUI(totalCount) {
+    const info = document.getElementById('page-info');
+    const prevBtn = document.getElementById('prev-btn');
+    const nextBtn = document.getElementById('next-btn');
+    if (!info) return;
+
+    const totalPages = Math.ceil(totalCount / pageSize);
+    info.innerText = `หน้า ${currentPage + 1} จากทั้งหมด ${totalPages || 1} (รวม ${totalCount} รายการ)`;
+
+    prevBtn.disabled = currentPage === 0;
+    nextBtn.disabled = (currentPage + 1) >= totalPages;
+}
+
+// ฟังก์ชันเปลี่ยนหน้า
+window.changePage = (direction) => {
+    currentPage += direction;
+    loadLogs();
+};
+
+// ฟังก์ชันรีเซ็ตหน้าเมื่อมีการกรองใหม่
+window.applyFilters = () => {
+    currentPage = 0; // กลับไปเริ่มหน้า 1 ใหม่
+    loadLogs();
 };
