@@ -6,43 +6,48 @@ const { createClient } = supabase;
 const db = createClient(SUPABASE_URL, SUPABASE_KEY);
 
 let currentUser = null;
-let allItems = []; // ตัวแปรเก็บข้อมูลสินค้าสำหรับกดแก้ไข
+let allItems = []; 
+let allLogs = []; // เพิ่มตัวแปรเก็บ Log สำหรับค้นหา
 
-// ทำงานทันทีเมื่อเปิดเว็บ
 window.onload = async () => {
     checkUser(); 
-    
-    // ถ้าอยู่หน้าหลัก (มีตารางสินค้า)
-    if (document.getElementById('item-grid')) {
-        loadItems();
-    }
-
-    // ถ้าอยู่หน้าประวัติ (มีตารางประวัติ)
+    if (document.getElementById('item-grid')) loadItems();
     if (document.getElementById('log-table-body')) {
-        const limit = document.getElementById('item-grid') ? 5 : 50; 
-        loadLogs(limit); 
+        const isIndex = !!document.getElementById('item-grid');
+        loadLogs(isIndex ? 5 : 50); 
     }
 };
 
-// --- 1. ฟังก์ชันโหลดข้อมูล ---
+// --- 1. จัดการรายการสินค้า (Grid) ---
 async function loadItems() {
-    // เปลี่ยนจาก .order('id') เป็นการเรียงตาม quantity จากมากไปน้อย
+    const grid = document.getElementById('item-grid');
+    if (grid) {
+        // ใส่ Loading Spinner ระหว่างรอข้อมูล
+        grid.innerHTML = `
+            <div class="text-center col-span-full py-20">
+                <div class="inline-block animate-spin rounded-full h-10 w-10 border-4 border-red-600 border-t-transparent mb-4"></div>
+                <p class="text-gray-400">กำลังดึงข้อมูลสต็อก...</p>
+            </div>`;
+    }
+
     const { data, error } = await db.from('items')
         .select('*')
         .eq('is_active', true)
-        .order('quantity', { ascending: false }); // แก้บรรทัดนี้
+        .order('quantity', { ascending: false });
     
     if (error) return console.error(error);
     
-    allItems = data; // เก็บข้อมูลลงตัวแปรกลาง
-    
-    const grid = document.getElementById('item-grid');
-    grid.innerHTML = ''; 
+    allItems = data;
+    renderItems(data); // เมื่อข้อมูลมาแล้ว ฟังก์ชันนี้จะไปเขียนทับ Spinner เองครับ
+}
 
-    data.forEach(item => {
+function renderItems(items) {
+    const grid = document.getElementById('item-grid');
+    if (!grid) return;
+    grid.innerHTML = items.length ? '' : '<div class="text-center col-span-full py-10 text-gray-400">ไม่พบรายการ...</div>'; 
+
+    items.forEach(item => {
         const isOut = item.quantity <= 0;
-        
-        // ปุ่ม Admin (ถ้าล็อกอินจะเห็นปุ่ม แก้ไข/ลบ)
         const adminBtns = currentUser ? `
             <div class="flex gap-2 mt-3 pt-3 border-t border-gray-100">
                 <button onclick="openAction(${item.id}, 'RESTOCK')" class="flex-1 py-1 bg-gray-100 hover:bg-gray-200 rounded text-sm">เติม</button>
@@ -54,21 +59,79 @@ async function loadItems() {
             </div>
         ` : '';
 
-        // *** ตรงนี้แก้เป็น 4:5 ให้แล้วนะครับ ***
         grid.innerHTML += `
             <div class="bg-white border border-gray-200 rounded-lg overflow-hidden hover:shadow-lg transition">
                 <div class="w-full aspect-[4/5] bg-gray-100 relative">
                     <img src="${item.image_url || 'https://via.placeholder.com/300'}" class="w-full h-full object-cover ${isOut ? 'grayscale' : ''}">
-                    <div class="absolute top-2 right-2 bg-red-600 text-white text-xs px-2 py-1 rounded">เหลือ ${item.quantity}</div>
+                    <div class="absolute top-2 right-2 ${isOut ? 'bg-gray-500' : 'bg-red-600'} text-white text-xs px-2 py-1 rounded">
+                        ${isOut ? 'ของหมด' : 'เหลือ ' + item.quantity}
+                    </div>
                 </div>
                 <div class="p-4">
                     <h3 class="font-bold text-lg">${item.name}</h3>
                     <p class="text-gray-500 text-sm h-10 overflow-hidden text-ellipsis">${item.description || '-'}</p>
                     ${adminBtns}
                 </div>
-            </div>
-        `;
+            </div>`;
     });
+}
+
+window.filterItems = () => {
+    const term = document.getElementById('item-search').value.toLowerCase();
+    renderItems(allItems.filter(i => i.name.toLowerCase().includes(term) || (i.description || '').toLowerCase().includes(term)));
+};
+
+// --- 2. จัดการประวัติ (Logs) ---
+async function loadLogs(limit = 10) { 
+    const { data, error } = await db.from('logs').select('*').order('created_at', { ascending: false }).limit(limit);
+    if (error) return console.error(error);
+    allLogs = data;
+    renderLogs(data);
+}
+
+function renderLogs(logs) {
+    const tbody = document.getElementById('log-table-body');
+    if (!tbody) return;
+    tbody.innerHTML = '';
+    logs.forEach(log => {
+        const isW = log.action_type === 'WITHDRAW';
+        const date = new Date(log.created_at).toLocaleDateString('th-TH');
+        tbody.innerHTML += `
+            <tr class="border-b hover:bg-gray-50">
+                <td class="p-3 text-gray-500">${date}</td>
+                <td class="p-3 font-semibold">${log.item_name}</td>
+                <td class="p-3">${isW ? log.user_name : 'Admin'}</td>
+                <td class="p-3 text-gray-500 text-xs">${isW ? log.branch : 'เติมสต็อก'}</td>
+                <td class="p-3 text-gray-400 italic">${log.note || '-'}</td>
+                <td class="p-3 text-right font-bold ${isW ? 'text-red-600' : 'text-green-600'}">${isW ? '-' : '+'}${log.amount}</td>
+                <td class="p-3 text-right font-mono font-bold text-blue-600 bg-blue-50">${log.balance_after ?? '-'}</td>
+            </tr>`;
+    });
+}
+
+window.filterLogs = () => {
+    const term = document.getElementById('log-search')?.value.toLowerCase();
+    if(term) renderLogs(allLogs.filter(l => l.item_name.toLowerCase().includes(term) || (l.user_name || '').toLowerCase().includes(term)));
+};
+
+// --- 3. ระบบเบิก/เติม/ลบ/แก้ไข (ย่อให้สั้นลง) ---
+async function submitAction() {
+    const id = document.getElementById('action-item-id').value;
+    const type = document.getElementById('action-type').value;
+    const amount = parseInt(document.getElementById('action-amount').value);
+    if(!amount) return alert('ใส่จำนวนด้วยครับ');
+
+    const { data: item } = await db.from('items').select('*').eq('id', id).single();
+    let newQty = type === 'WITHDRAW' ? item.quantity - amount : item.quantity + amount;
+    if (type === 'WITHDRAW' && item.quantity < amount) return alert('ของไม่พอ!');
+
+    await db.from('items').update({ quantity: newQty }).eq('id', id);
+    await db.from('logs').insert({ item_id: id, item_name: item.name, action_type: type, amount: amount, balance_after: newQty, user_name: document.getElementById('action-name').value || 'Admin', branch: document.getElementById('action-branch').value || '-', note: document.getElementById('action-note').value });
+
+    alert('เรียบร้อย!');
+    toggleModal('modal-action', false);
+    loadItems();
+    loadLogs(document.getElementById('item-grid') ? 5 : 50);
 }
 
 async function loadLogs(limit = 10) { 
