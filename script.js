@@ -73,32 +73,26 @@ async function loadItems() {
 
 async function loadLogs(limit = 10) { 
     const { data } = await db.from('logs').select('*').order('created_at', { ascending: false }).limit(limit);
-    
     const tbody = document.getElementById('log-table-body');
     if (!tbody) return; 
-    
     tbody.innerHTML = '';
     
     data.forEach(log => {
         const isWithdraw = log.action_type === 'WITHDRAW';
         const date = new Date(log.created_at).toLocaleDateString('th-TH');
-        
         tbody.innerHTML += `
             <tr class="border-b hover:bg-gray-50">
                 <td class="p-3 text-gray-500">${date}</td>
-                <td class="p-3">${log.item_name}</td>
-                <td class="p-3">
-                    ${isWithdraw ? log.user_name : 'Admin'} 
-                    <span class="text-xs text-gray-400">(${isWithdraw ? log.branch : 'เติมสต็อค'})</span>
-                </td>
-                <td class="p-3 text-gray-400 italic">${log.note || '-'}</td> <td class="p-3 text-right font-bold ${isWithdraw ? 'text-red-600' : 'text-green-600'}">
+                <td class="p-3 font-semibold">${log.item_name}</td>
+                <td class="p-3">${isWithdraw ? log.user_name : 'Admin'}</td>
+                <td class="p-3 text-gray-500 text-xs">${isWithdraw ? log.branch : 'เติมสต็อก'}</td> <td class="p-3 text-gray-400 italic">${log.note || '-'}</td>
+                <td class="p-3 text-right font-bold ${isWithdraw ? 'text-red-600' : 'text-green-600'}">
                     ${isWithdraw ? '-' : '+'}${log.amount}
                 </td>
             </tr>
         `;
     });
 }
-
 // --- 2. ฟังก์ชันจัดการระบบ ---
 
 // ล็อกอิน
@@ -280,3 +274,33 @@ window.toggleModal = (id, show) => {
     if(show) el.classList.remove('hidden');
     else el.classList.add('hidden');
 }
+
+window.exportLogsToCSV = async () => {
+    const { data, error } = await db.from('logs').select('*').order('created_at', { ascending: false });
+    if (error) return alert('ไม่สามารถดึงข้อมูลเพื่อ Export ได้');
+
+    // ส่วนหัวของไฟล์ CSV และแก้ปัญหาภาษาไทยใน Excel ด้วย BOM (\uFEFF)
+    let csvContent = "\uFEFF"; 
+    csvContent += "วันที่,รายการสินค้า,ผู้ทำรายการ,สาขา,หมายเหตุ,จำนวน\n";
+
+    data.forEach(log => {
+        const date = new Date(log.created_at).toLocaleDateString('th-TH');
+        const isWithdraw = log.action_type === 'WITHDRAW';
+        const user = isWithdraw ? log.user_name : 'Admin';
+        const branch = isWithdraw ? log.branch : 'เติมสต็อก';
+        const amount = (isWithdraw ? '-' : '+') + log.amount;
+        const note = (log.note || '-').replace(/,/g, ' '); // กันเครื่องหมายคอมม่าทำไฟล์เพี้ยน
+
+        csvContent += `"${date}","${log.item_name}","${user}","${branch}","${note}","${amount}"\n`;
+    });
+
+    // สร้างไฟล์เพื่อดาวน์โหลด
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.setAttribute("href", url);
+    link.setAttribute("download", `stock_history_${new Date().toLocaleDateString('th-TH')}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+};
