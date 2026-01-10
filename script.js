@@ -1,18 +1,27 @@
-// --- ตั้งค่า Supabase (เอาค่าจากเว็บ Supabase มาใส่ตรงนี้) ---
-const SUPABASE_URL = 'https://dcigpisivgpofeljvoph.supabase.co'; // ใส่ URL ของคุณ
-const SUPABASE_KEY = 'sb_publishable_ccUnFtL3x-8eV8exjy4oIw__JiDK4VK'; // ใส่ Key (Anon Key) ของคุณ
+// --- ตั้งค่า Supabase ---
+const SUPABASE_URL = 'https://dcigpisivgpofeljvoph.supabase.co'; 
+const SUPABASE_KEY = 'sb_publishable_ccUnFtL3x-8eV8exjy4oIw__JiDK4VK'; 
 
-// เริ่มการทำงาน
 const { createClient } = supabase;
 const db = createClient(SUPABASE_URL, SUPABASE_KEY);
 
 let currentUser = null;
+let allItems = []; // ตัวแปรเก็บข้อมูลสินค้าสำหรับกดแก้ไข
 
 // ทำงานทันทีเมื่อเปิดเว็บ
 window.onload = async () => {
-    checkUser();
-    loadItems();
-    loadLogs();
+    checkUser(); 
+    
+    // ถ้าอยู่หน้าหลัก (มีตารางสินค้า)
+    if (document.getElementById('item-grid')) {
+        loadItems();
+    }
+
+    // ถ้าอยู่หน้าประวัติ (มีตารางประวัติ)
+    if (document.getElementById('log-table-body')) {
+        const limit = document.getElementById('item-grid') ? 5 : 50; 
+        loadLogs(limit); 
+    }
 };
 
 // --- 1. ฟังก์ชันโหลดข้อมูล ---
@@ -22,29 +31,36 @@ async function loadItems() {
     
     if (error) return console.error(error);
     
+    allItems = data; // เก็บข้อมูลลงตัวแปรกลาง
+    
     const grid = document.getElementById('item-grid');
-    grid.innerHTML = ''; // ล้างของเก่า
+    grid.innerHTML = ''; 
 
     data.forEach(item => {
         const isOut = item.quantity <= 0;
-        // ปุ่ม Admin (ถ้าล็อกอินจะเห็น)
+        
+        // ปุ่ม Admin (ถ้าล็อกอินจะเห็นปุ่ม แก้ไข/ลบ)
         const adminBtns = currentUser ? `
             <div class="flex gap-2 mt-3 pt-3 border-t border-gray-100">
                 <button onclick="openAction(${item.id}, 'RESTOCK')" class="flex-1 py-1 bg-gray-100 hover:bg-gray-200 rounded text-sm">เติม</button>
                 <button onclick="openAction(${item.id}, 'WITHDRAW')" class="flex-1 py-1 bg-black text-white hover:bg-gray-800 rounded text-sm">เบิก</button>
             </div>
-            <button onclick="deleteItem(${item.id})" class="text-red-500 text-xs mt-2 underline w-full text-center">ลบสินค้า</button>
+            <div class="flex gap-2 mt-2">
+                <button onclick="openEditModal(${item.id})" class="flex-1 text-center text-yellow-600 text-xs border border-yellow-600 rounded py-1 hover:bg-yellow-50">แก้ไข</button>
+                <button onclick="deleteItem(${item.id})" class="flex-1 text-center text-red-500 text-xs border border-red-500 rounded py-1 hover:bg-red-50">ลบ</button>
+            </div>
         ` : '';
 
+        // *** ตรงนี้แก้เป็น 4:5 ให้แล้วนะครับ ***
         grid.innerHTML += `
             <div class="bg-white border border-gray-200 rounded-lg overflow-hidden hover:shadow-lg transition">
-                <div class="h-48 bg-gray-100 relative">
+                <div class="w-full aspect-[4/5] bg-gray-100 relative">
                     <img src="${item.image_url || 'https://via.placeholder.com/300'}" class="w-full h-full object-cover ${isOut ? 'grayscale' : ''}">
                     <div class="absolute top-2 right-2 bg-red-600 text-white text-xs px-2 py-1 rounded">เหลือ ${item.quantity}</div>
                 </div>
                 <div class="p-4">
                     <h3 class="font-bold text-lg">${item.name}</h3>
-                    <p class="text-gray-500 text-sm">${item.description || '-'}</p>
+                    <p class="text-gray-500 text-sm h-10 overflow-hidden text-ellipsis">${item.description || '-'}</p>
                     ${adminBtns}
                 </div>
             </div>
@@ -52,9 +68,12 @@ async function loadItems() {
     });
 }
 
-async function loadLogs() {
-    const { data } = await db.from('logs').select('*').order('created_at', { ascending: false }).limit(10);
+async function loadLogs(limit = 10) { 
+    const { data } = await db.from('logs').select('*').order('created_at', { ascending: false }).limit(limit);
+    
     const tbody = document.getElementById('log-table-body');
+    if (!tbody) return; 
+    
     tbody.innerHTML = '';
     
     data.forEach(log => {
@@ -88,8 +107,8 @@ async function handleLogin() {
     else {
         currentUser = data.user;
         toggleModal('modal-login', false);
-        checkUser(); // อัปเดตหน้าจอ
-        loadItems(); // โหลดปุ่มใหม่
+        checkUser(); 
+        loadItems(); 
     }
 }
 
@@ -103,17 +122,17 @@ async function checkUser() {
 
     if (currentUser) {
         authDiv.innerHTML = `<button onclick="logout()" class="text-red-600 text-sm font-bold">ออกจากระบบ</button>`;
-        adminTool.classList.remove('hidden');
+        if(adminTool) adminTool.classList.remove('hidden');
     } else {
         authDiv.innerHTML = `<button onclick="toggleModal('modal-login', true)" class="bg-black text-white px-3 py-1 rounded text-sm">Staff Login</button>`;
-        adminTool.classList.add('hidden');
+        if(adminTool) adminTool.classList.add('hidden');
     }
 }
 
 async function logout() {
     await db.auth.signOut();
     checkUser();
-    loadItems();
+    if(document.getElementById('item-grid')) loadItems();
 }
 
 // เปิดหน้าต่าง เบิก/เติม
@@ -122,7 +141,6 @@ window.openAction = (id, type) => {
     document.getElementById('action-type').value = type;
     document.getElementById('action-title').innerText = type === 'RESTOCK' ? 'เติมสต็อค' : 'เบิกของ';
     
-    // ถ้าเบิก ให้โชว์ช่องกรอกชื่อ
     if(type === 'WITHDRAW') document.getElementById('withdraw-fields').classList.remove('hidden');
     else document.getElementById('withdraw-fields').classList.add('hidden');
 
@@ -137,7 +155,6 @@ async function submitAction() {
 
     if(!amount) return alert('ใส่จำนวนด้วยครับ');
 
-    // ดึงของเดิมมาก่อน
     const { data: item } = await db.from('items').select('*').eq('id', id).single();
     
     let newQty = item.quantity;
@@ -148,10 +165,8 @@ async function submitAction() {
         newQty += amount;
     }
 
-    // อัปเดตของ
     await db.from('items').update({ quantity: newQty }).eq('id', id);
 
-    // บันทึกประวัติ
     await db.from('logs').insert({
         item_id: id,
         item_name: item.name,
@@ -165,10 +180,10 @@ async function submitAction() {
     alert('เรียบร้อย!');
     toggleModal('modal-action', false);
     loadItems();
-    loadLogs();
+    loadLogs(document.getElementById('item-grid') ? 5 : 50);
 }
 
-// เพิ่มสินค้าใหม่
+// เพิ่มสินค้าใหม่ (แก้เรื่องชื่อไฟล์ภาษาไทยแล้ว)
 async function addItem() {
     const name = document.getElementById('add-name').value;
     const qty = document.getElementById('add-qty').value;
@@ -178,8 +193,10 @@ async function addItem() {
 
     let imageUrl = '';
     if(file) {
-        const fileName = Date.now() + '-' + file.name;
-        // อัปโหลดรูป
+        // ตั้งชื่อไฟล์ใหม่เป็นตัวเลข (กัน error ภาษาไทย)
+        const fileExt = file.name.split('.').pop();
+        const fileName = `item-${Date.now()}.${fileExt}`;
+        
         const { error } = await db.storage.from('item-images').upload(fileName, file);
         if(!error) {
             const { data } = db.storage.from('item-images').getPublicUrl(fileName);
@@ -207,80 +224,21 @@ window.deleteItem = async (id) => {
     }
 }
 
-// เครื่องมือ เปิด/ปิด หน้าต่าง
-window.toggleModal = (id, show) => {
-    const el = document.getElementById(id);
-    if(show) el.classList.remove('hidden');
-    else el.classList.add('hidden');
-}
-
-// --- ประกาศตัวแปรเก็บข้อมูลสินค้าทั้งหมดไว้ข้างบนสุด (ใต้ let currentUser) ---
-let allItems = []; 
-
-async function loadItems() {
-    // ดึงข้อมูล
-    const { data, error } = await db.from('items').select('*').eq('is_active', true).order('id');
-    
-    if (error) return console.error(error);
-    
-    // *** เพิ่มบรรทัดนี้: เก็บข้อมูลลงตัวแปรกลาง เอาไว้ใช้ตอนกดแก้ไข ***
-    allItems = data; 
-    
-    const grid = document.getElementById('item-grid');
-    grid.innerHTML = ''; 
-
-    data.forEach(item => {
-        const isOut = item.quantity <= 0;
-        
-        // *** แก้ไขตรง adminBtns: เพิ่มปุ่ม แก้ไข สีเหลือง ***
-        const adminBtns = currentUser ? `
-            <div class="flex gap-2 mt-3 pt-3 border-t border-gray-100">
-                <button onclick="openAction(${item.id}, 'RESTOCK')" class="flex-1 py-1 bg-gray-100 hover:bg-gray-200 rounded text-sm">เติม</button>
-                <button onclick="openAction(${item.id}, 'WITHDRAW')" class="flex-1 py-1 bg-black text-white hover:bg-gray-800 rounded text-sm">เบิก</button>
-            </div>
-            <div class="flex gap-2 mt-2">
-                <button onclick="openEditModal(${item.id})" class="flex-1 text-center text-yellow-600 text-xs border border-yellow-600 rounded py-1 hover:bg-yellow-50">แก้ไข</button>
-                <button onclick="deleteItem(${item.id})" class="flex-1 text-center text-red-500 text-xs border border-red-500 rounded py-1 hover:bg-red-50">ลบ</button>
-            </div>
-        ` : '';
-        // ********************************************************
-
-        grid.innerHTML += `
-            <div class="bg-white border border-gray-200 rounded-lg overflow-hidden hover:shadow-lg transition">
-                <div class="h-48 bg-gray-100 relative">
-                    <img src="${item.image_url || 'https://via.placeholder.com/300'}" class="w-full h-full object-cover ${isOut ? 'grayscale' : ''}">
-                    <div class="absolute top-2 right-2 bg-red-600 text-white text-xs px-2 py-1 rounded">เหลือ ${item.quantity}</div>
-                </div>
-                <div class="p-4">
-                    <h3 class="font-bold text-lg">${item.name}</h3>
-                    <p class="text-gray-500 text-sm h-10 overflow-hidden text-ellipsis">${item.description || '-'}</p>
-                    ${adminBtns}
-                </div>
-            </div>
-        `;
-    });
-}
-
-// --- ฟังก์ชันสำหรับระบบแก้ไข (เพิ่มใหม่) ---
-
-// 1. เปิดหน้าต่างแก้ไข และดึงข้อมูลเก่ามาใส่ช่อง
-function openEditModal(id) {
-    // ค้นหาข้อมูลสินค้าจากตัวแปร allItems ที่เราเก็บไว้ตอนโหลด
+// เปิดหน้าต่างแก้ไข
+window.openEditModal = (id) => {
     const item = allItems.find(x => x.id === id);
-    
     if(!item) return;
 
-    // เอาข้อมูลใส่ Input
     document.getElementById('edit-id').value = item.id;
     document.getElementById('edit-name').value = item.name;
     document.getElementById('edit-desc').value = item.description || '';
-    document.getElementById('edit-image').value = ''; // รีเซ็ตช่องเลือกไฟล์
+    document.getElementById('edit-image').value = ''; 
 
     toggleModal('modal-edit', true);
 }
 
-// 2. บันทึกการแก้ไขลง Supabase
-async function submitEdit() {
+// บันทึกการแก้ไข (แก้เรื่องชื่อไฟล์ภาษาไทยแล้ว)
+window.submitEdit = async () => {
     const id = document.getElementById('edit-id').value;
     const name = document.getElementById('edit-name').value;
     const desc = document.getElementById('edit-desc').value;
@@ -288,33 +246,33 @@ async function submitEdit() {
 
     if(!name) return alert('ชื่อห้ามว่างนะครับ');
 
-    // เตรียมข้อมูลที่จะอัปเดต
-    let updateData = {
-        name: name,
-        description: desc
-    };
+    let updateData = { name: name, description: desc };
 
-    // ถ้ามีการเลือกรูปใหม่ ให้ทำกระบวนการอัปโหลด
     if (file) {
-        const fileName = 'edit-' + Date.now() + '-' + file.name;
+        // ตั้งชื่อไฟล์ใหม่เป็นตัวเลข (กัน error ภาษาไทย)
+        const fileExt = file.name.split('.').pop();
+        const fileName = `edit-${Date.now()}.${fileExt}`;
+
         const { error: uploadError } = await db.storage.from('item-images').upload(fileName, file);
-        
-        if (uploadError) {
-            return alert('อัปโหลดรูปไม่ผ่าน: ' + uploadError.message);
-        }
+        if (uploadError) return alert('อัปโหลดรูปไม่ผ่าน: ' + uploadError.message);
 
         const { data } = db.storage.from('item-images').getPublicUrl(fileName);
-        updateData.image_url = data.publicUrl; // เพิ่ม URL รูปใหม่เข้าไปในข้อมูลที่จะอัปเดต
+        updateData.image_url = data.publicUrl;
     }
 
-    // ส่งคำสั่ง Update ไปที่ Supabase
     const { error } = await db.from('items').update(updateData).eq('id', id);
 
-    if (error) {
-        alert('แก้ไม่ได้แฮะ: ' + error.message);
-    } else {
+    if (error) alert('แก้ไม่ได้แฮะ: ' + error.message);
+    else {
         alert('แก้ไขเรียบร้อย!');
         toggleModal('modal-edit', false);
-        loadItems(); // โหลดหน้าใหม่
+        loadItems();
     }
+}
+
+// เครื่องมือ เปิด/ปิด หน้าต่าง
+window.toggleModal = (id, show) => {
+    const el = document.getElementById(id);
+    if(show) el.classList.remove('hidden');
+    else el.classList.add('hidden');
 }
