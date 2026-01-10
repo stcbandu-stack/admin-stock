@@ -26,8 +26,11 @@ window.onload = async () => {
 
 // --- 1. ฟังก์ชันโหลดข้อมูล ---
 async function loadItems() {
-    // ดึงข้อมูลสินค้าที่ยังไม่ถูกลบ
-    const { data, error } = await db.from('items').select('*').eq('is_active', true).order('id');
+    // เปลี่ยนจาก .order('id') เป็นการเรียงตาม quantity จากมากไปน้อย
+    const { data, error } = await db.from('items')
+        .select('*')
+        .eq('is_active', true)
+        .order('quantity', { ascending: false }); // แก้บรรทัดนี้
     
     if (error) return console.error(error);
     
