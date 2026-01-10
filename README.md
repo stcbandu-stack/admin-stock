@@ -1,0 +1,2 @@
+# admin-stock
+Stock Management
