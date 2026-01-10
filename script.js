@@ -79,6 +79,7 @@ async function loadLogs(limit = 10) {
     data.forEach(log => {
         const isWithdraw = log.action_type === 'WITHDRAW';
         const date = new Date(log.created_at).toLocaleDateString('th-TH');
+        
         tbody.innerHTML += `
             <tr class="border-b hover:bg-gray-50">
                 <td class="p-3 text-gray-500">${date}</td>
@@ -87,7 +88,7 @@ async function loadLogs(limit = 10) {
                     ${isWithdraw ? log.user_name : 'Admin'} 
                     <span class="text-xs text-gray-400">(${isWithdraw ? log.branch : 'เติมสต็อค'})</span>
                 </td>
-                <td class="p-3 text-right font-bold ${isWithdraw ? 'text-red-600' : 'text-green-600'}">
+                <td class="p-3 text-gray-400 italic">${log.note || '-'}</td> <td class="p-3 text-right font-bold ${isWithdraw ? 'text-red-600' : 'text-green-600'}">
                     ${isWithdraw ? '-' : '+'}${log.amount}
                 </td>
             </tr>
