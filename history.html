@@ -21,23 +21,24 @@
     </nav>
 
     <div class="max-w-6xl mx-auto p-6">
-        <h2 class="text-2xl font-bold mb-6 border-l-4 border-red-600 pl-3">ประวัติการทำรายการทั้งหมด</h2>
-        
-        <div class="bg-white rounded-lg shadow-sm border border-gray-100 overflow-hidden">
-            <table class="w-full text-left text-sm">
-                <thead class="bg-gray-100 text-gray-700 uppercase tracking-wider">
-    <tr>
-        <th class="p-4 font-semibold">วันที่</th>
-        <th class="p-4 font-semibold">สินค้า</th>
-        <th class="p-4 font-semibold">ผู้ทำรายการ</th>
-		<th class="p-4 font-semibold">หมายเหตุ</th><th class="p-4 text-right font-semibold">จำนวน</th>
-        
-    </tr>
-</thead>
-                <tbody id="log-table-body" class="divide-y divide-gray-100">
-                    <tr><td colspan="4" class="p-4 text-center text-gray-400">กำลังโหลดข้อมูล...</td></tr>
-                </tbody>
-            </table>
+ <div class="flex justify-between items-center mb-6">
+    <h2 class="text-2xl font-bold border-l-4 border-red-600 pl-3">ประวัติการทำรายการทั้งหมด</h2>
+    <button onclick="exportLogsToCSV()" class="bg-green-600 text-white px-4 py-2 rounded text-sm hover:bg-green-700 flex items-center gap-2">
+        📥 Export to CSV
+    </button>
+</div>
+
+<table class="w-full text-left text-sm">
+    <thead class="bg-gray-100 text-gray-700 uppercase tracking-wider">
+        <tr>
+            <th class="p-4 font-semibold">วันที่</th>
+            <th class="p-4 font-semibold">สินค้า</th>
+            <th class="p-4 font-semibold">ผู้ทำรายการ</th>
+            <th class="p-4 font-semibold">สาขา</th> <th class="p-4 font-semibold">หมายเหตุ</th>
+            <th class="p-4 text-right font-semibold">จำนวน</th>
+        </tr>
+    </thead>
+    </table>
         </div>
     </div>
 
