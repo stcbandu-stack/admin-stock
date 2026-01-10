@@ -72,27 +72,38 @@ async function loadItems() {
 }
 
 async function loadLogs(limit = 10) { 
-    const { data } = await db.from('logs').select('*').order('created_at', { ascending: false }).limit(limit);
+    const { data, error } = await db.from('logs').select('*').order('created_at', { ascending: false }).limit(limit);
+    if (error) return console.error(error);
+
     const tbody = document.getElementById('log-table-body');
     if (!tbody) return; 
-    tbody.innerHTML = '';
     
+    tbody.innerHTML = ''; // ล้างข้อมูลเก่าก่อนโหลดใหม่
+
+    // พี่ลืมบรรทัดข้างล่างนี้ครับ (ลูป foreach)
     data.forEach(log => {
         const isWithdraw = log.action_type === 'WITHDRAW';
         const date = new Date(log.created_at).toLocaleDateString('th-TH');
+        
         tbody.innerHTML += `
             <tr class="border-b hover:bg-gray-50">
                 <td class="p-3 text-gray-500">${date}</td>
                 <td class="p-3 font-semibold">${log.item_name}</td>
                 <td class="p-3">${isWithdraw ? log.user_name : 'Admin'}</td>
-                <td class="p-3 text-gray-500 text-xs">${isWithdraw ? log.branch : 'เติมสต็อก'}</td> <td class="p-3 text-gray-400 italic">${log.note || '-'}</td>
+                <td class="p-3 text-gray-500 text-xs">${isWithdraw ? log.branch : 'เติมสต็อก'}</td>
+                <td class="p-3 text-gray-400 italic">${log.note || '-'}</td>
                 <td class="p-3 text-right font-bold ${isWithdraw ? 'text-red-600' : 'text-green-600'}">
                     ${isWithdraw ? '-' : '+'}${log.amount}
+                </td>
+                <td class="p-3 text-right font-mono font-bold text-blue-600 bg-blue-50">
+                    ${log.balance_after !== null ? log.balance_after : '-'}
                 </td>
             </tr>
         `;
     });
 }
+
+
 // --- 2. ฟังก์ชันจัดการระบบ ---
 
 // ล็อกอิน
@@ -165,15 +176,16 @@ async function submitAction() {
 
     await db.from('items').update({ quantity: newQty }).eq('id', id);
 
-    await db.from('logs').insert({
-        item_id: id,
-        item_name: item.name,
-        action_type: type,
-        amount: amount,
-        user_name: document.getElementById('action-name').value || 'Admin',
-        branch: document.getElementById('action-branch').value || '-',
-        note: document.getElementById('action-note').value
-    });
+await db.from('logs').insert({
+    item_id: id,
+    item_name: item.name,
+    action_type: type,
+    amount: amount,
+    balance_after: newQty, // เพิ่มบรรทัดนี้เพื่อบันทึกยอดคงเหลือหลังทำรายการ
+    user_name: document.getElementById('action-name').value || 'Admin',
+    branch: document.getElementById('action-branch').value || '-',
+    note: document.getElementById('action-note').value
+});
 
     alert('เรียบร้อย!');
     toggleModal('modal-action', false);
@@ -279,9 +291,8 @@ window.exportLogsToCSV = async () => {
     const { data, error } = await db.from('logs').select('*').order('created_at', { ascending: false });
     if (error) return alert('ไม่สามารถดึงข้อมูลเพื่อ Export ได้');
 
-    // ส่วนหัวของไฟล์ CSV และแก้ปัญหาภาษาไทยใน Excel ด้วย BOM (\uFEFF)
     let csvContent = "\uFEFF"; 
-    csvContent += "วันที่,รายการสินค้า,ผู้ทำรายการ,สาขา,หมายเหตุ,จำนวน\n";
+    csvContent += "วันที่,รายการสินค้า,ผู้ทำรายการ,สาขา,หมายเหตุ,จำนวน,ยอดคงเหลือ\n";
 
     data.forEach(log => {
         const date = new Date(log.created_at).toLocaleDateString('th-TH');
@@ -289,12 +300,12 @@ window.exportLogsToCSV = async () => {
         const user = isWithdraw ? log.user_name : 'Admin';
         const branch = isWithdraw ? log.branch : 'เติมสต็อก';
         const amount = (isWithdraw ? '-' : '+') + log.amount;
-        const note = (log.note || '-').replace(/,/g, ' '); // กันเครื่องหมายคอมม่าทำไฟล์เพี้ยน
+        const note = (log.note || '-').replace(/,/g, ' '); 
+        const balance = log.balance_after !== null ? log.balance_after : '-';
 
-        csvContent += `"${date}","${log.item_name}","${user}","${branch}","${note}","${amount}"\n`;
+        csvContent += `"${date}","${log.item_name}","${user}","${branch}","${note}","${amount}","${balance}"\n`;
     });
 
-    // สร้างไฟล์เพื่อดาวน์โหลด
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
