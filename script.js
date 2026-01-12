@@ -171,7 +171,32 @@ async function checkUser() {
     }
 }
 
-async function logout() { await db.auth.signOut(); showToast('ออกจากระบบแล้ว', 'info'); checkUser(); loadItems(); }
+async function logout() {
+    try {
+        // พยายามบอก Server ว่าออกแล้วนะ
+        await db.auth.signOut(); 
+    } catch (error) {
+        // ถ้าบอก Server ไม่ได้ (เน็ตหลุด) ช่างมัน... เราจะลบเองในเครื่อง
+        console.warn('Logout error (ช่างมัน):', error);
+    } finally {
+        // ไม่ว่าจะเกิดอะไรขึ้น "ต้อง" ทำส่วนนี้เสมอ
+        
+        // 1. ล้างค่าตัวแปร
+        currentUser = null; 
+        
+        // 2. ล้าง LocalStorage ของ Supabase (กวาดให้เกลี้ยง)
+        localStorage.clear(); // หรือจะลบเฉพาะ key ของ supabase ก็ได้แต่นี่ง่ายสุดสำหรับแอปเรา
+        
+        // 3. แจ้งเตือนและรีเฟรชหน้าจอ
+        showToast('ออกจากระบบแล้ว', 'info');
+        checkUser();
+        
+        // 4. (ท่าไม้ตาย) รีโหลดหน้าเว็บใหม่ 1 ที เพื่อความชัวร์ 100%
+        setTimeout(() => {
+            window.location.reload();
+        }, 500);
+    }
+}
 
 window.toggleModal = (id, show) => { const el = document.getElementById(id); if(show) el.classList.remove('hidden'); else el.classList.add('hidden'); };
 
