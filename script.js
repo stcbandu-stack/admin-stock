@@ -69,14 +69,14 @@ function renderItems(items) {
     grid.innerHTML = items.length ? '' : '<div class="text-center col-span-full py-10 text-gray-400">ไม่พบรายการ...</div>'; 
     items.forEach(item => {
         const isOut = item.quantity <= 0;
-        const adminBtns = currentUser ? `
-            <div class="flex gap-2 mt-3 pt-3 border-t border-gray-100">
-                <button onclick="openAction(${item.id}, 'RESTOCK')" class="flex-1 py-1 bg-gray-100 rounded text-sm flex items-center justify-center gap-1"><i class="fa-solid fa-box-open"></i> เติม</button>
-                <button onclick="openAction(${item.id}, 'WITHDRAW')" class="flex-1 py-1 bg-black text-white rounded text-sm flex items-center justify-center gap-1"><i class="fa-solid fa-hand-holding-heart"></i> เบิก</button>
+const adminBtns = currentUser ? `
+            <div class="flex gap-1 mt-2 pt-2 border-t border-gray-100">
+                <button onclick="openAction(${item.id}, 'RESTOCK')" class="flex-1 py-1 bg-gray-100 rounded text-xs md:text-sm flex items-center justify-center gap-1">เติม</button>
+                <button onclick="openAction(${item.id}, 'WITHDRAW')" class="flex-1 py-1 bg-black text-white rounded text-xs md:text-sm flex items-center justify-center gap-1">เบิก</button>
             </div>
-            <div class="flex gap-2 mt-2">
-                <button onclick="openEditModal(${item.id})" class="flex-1 text-yellow-600 text-xs border border-yellow-600 rounded py-1 flex items-center justify-center gap-1"><i class="fa-solid fa-pen-to-square"></i> แก้ไข</button>
-                <button onclick="deleteItem(${item.id})" class="flex-1 text-red-500 text-xs border border-red-500 rounded py-1 flex items-center justify-center gap-1"><i class="fa-solid fa-trash-can"></i> ลบ</button>
+            <div class="flex gap-1 mt-1">
+                <button onclick="openEditModal(${item.id})" class="flex-1 text-yellow-600 text-xs border border-yellow-600 rounded py-1 flex items-center justify-center gap-1">แก้ไข</button>
+                <button onclick="deleteItem(${item.id})" class="flex-1 text-red-500 text-xs border border-red-500 rounded py-1 flex items-center justify-center gap-1">ลบ</button>
             </div>` : '';
         grid.innerHTML += `
             <div class="bg-white border border-gray-200 rounded-lg overflow-hidden hover:shadow-lg transition">
