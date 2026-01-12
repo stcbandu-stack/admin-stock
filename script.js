@@ -357,3 +357,21 @@ window.jumpToPage = (pageNum) => {
     currentPage = pageNum - 1;
     loadLogs();
 };
+
+// ฟังก์ชันเปลี่ยนหน้า
+window.changePage = (direction) => {
+    const newPage = currentPage + direction;
+    
+    // กันไม่ให้ถอยหลังไปน้อยกว่าหน้า 1 (index 0)
+    // และกันไม่ให้ไปข้างหน้าเกินจำนวนหน้าทั้งหมดที่มี
+    if (newPage >= 0 && newPage < currentTotalPages) {
+        currentPage = newPage;
+        loadLogs();
+    }
+};
+
+// ฟังก์ชันรีเซ็ตหน้าเมื่อมีการกรองใหม่
+window.applyFilters = () => {
+    currentPage = 0; // กลับไปเริ่มหน้า 1 ใหม่
+    loadLogs();
+};
