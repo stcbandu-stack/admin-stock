@@ -71,14 +71,28 @@
         </table>
     </div>
     
-    <div class="bg-gray-50 p-4 border-t border-gray-100 flex justify-between items-center">
+<div class="bg-gray-50 p-4 border-t border-gray-100 flex flex-col md:flex-row justify-between items-center gap-4">
         <span class="text-xs text-gray-500 font-bold" id="page-info">กำลังโหลด...</span>
-        <div class="flex gap-2">
-            <button onclick="changePage(-1)" id="prev-btn" class="px-4 py-1 bg-white border rounded shadow-sm text-gray-400 disabled:opacity-50 hover:bg-gray-50 transition"><i class="fa-solid fa-chevron-left"></i></button>
-            <button onclick="changePage(1)" id="next-btn" class="px-4 py-1 bg-white border rounded shadow-sm text-gray-400 disabled:opacity-50 hover:bg-gray-50 transition"><i class="fa-solid fa-chevron-right"></i></button>
+        
+        <div class="flex items-center gap-2">
+            <button onclick="changePage(-1)" id="prev-btn" class="w-8 h-8 flex items-center justify-center bg-white border rounded shadow-sm text-gray-400 disabled:opacity-50 hover:bg-gray-50 transition">
+                <i class="fa-solid fa-chevron-left"></i>
+            </button>
+
+            <div class="flex items-center gap-1 bg-white border rounded px-2 py-1 shadow-sm">
+                <span class="text-xs text-gray-400">หน้า</span>
+                <input type="number" id="page-input" min="1" 
+                       class="w-12 text-center text-sm font-bold text-gray-700 outline-none focus:text-red-600"
+                       onchange="jumpToPage(this.value)"
+                       onkeydown="if(event.key === 'Enter') jumpToPage(this.value)">
+                <span class="text-xs text-gray-400">/ <span id="total-pages-display">-</span></span>
+            </div>
+
+            <button onclick="changePage(1)" id="next-btn" class="w-8 h-8 flex items-center justify-center bg-white border rounded shadow-sm text-gray-400 disabled:opacity-50 hover:bg-gray-50 transition">
+                <i class="fa-solid fa-chevron-right"></i>
+            </button>
         </div>
     </div>
-</div>
 
     <div id="modal-login" class="fixed inset-0 bg-black/50 hidden flex items-center justify-center z-50">
         <div class="bg-white p-6 rounded-lg w-80 shadow-2xl">

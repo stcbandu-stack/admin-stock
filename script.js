@@ -273,6 +273,7 @@ window.exportLogsToCSV = async () => {
 };
 
 let currentPage = 0;
+let currentTotalPages = 1; // เพิ่มตัวนี้ เพื่อเอาไว้เช็คว่ากรอกเลขเกินหน้าที่มีจริงไหม
 const pageSize = 25; // แสดงหน้าละ 25 รายการ
 
 // แก้ไขฟังก์ชัน loadLogs ให้ฉลาดขึ้น
@@ -318,23 +319,41 @@ function updatePaginationUI(totalCount) {
     const info = document.getElementById('page-info');
     const prevBtn = document.getElementById('prev-btn');
     const nextBtn = document.getElementById('next-btn');
+    const pageInput = document.getElementById('page-input');      // เพิ่ม
+    const totalDisplay = document.getElementById('total-pages-display'); // เพิ่ม
+
     if (!info) return;
 
-    const totalPages = Math.ceil(totalCount / pageSize);
-    info.innerText = `หน้า ${currentPage + 1} จากทั้งหมด ${totalPages || 1} (รวม ${totalCount} รายการ)`;
+    currentTotalPages = Math.ceil(totalCount / pageSize) || 1; // คำนวณหน้าทั้งหมดเก็บใส่ตัวแปร
+
+    info.innerText = `รายการที่ ${currentPage * pageSize + 1} - ${Math.min((currentPage + 1) * pageSize, totalCount)} จากทั้งหมด ${totalCount}`;
+
+    // อัปเดต UI ช่องกรอก
+    if(pageInput) {
+        pageInput.value = currentPage + 1; // ใส่เลขหน้าปัจจุบันลงในช่อง
+        pageInput.max = currentTotalPages; // กันไม่ให้กดลูกศรเกิน
+    }
+    if(totalDisplay) {
+        totalDisplay.innerText = currentTotalPages; // แสดงจำนวนหน้าทั้งหมดหลังเครื่องหมาย /
+    }
 
     prevBtn.disabled = currentPage === 0;
-    nextBtn.disabled = (currentPage + 1) >= totalPages;
+    nextBtn.disabled = (currentPage + 1) >= currentTotalPages;
 }
 
-// ฟังก์ชันเปลี่ยนหน้า
-window.changePage = (direction) => {
-    currentPage += direction;
-    loadLogs();
-};
+// ฟังก์ชันกระโดดไปหน้าที่ระบุ
+window.jumpToPage = (pageNum) => {
+    pageNum = parseInt(pageNum);
 
-// ฟังก์ชันรีเซ็ตหน้าเมื่อมีการกรองใหม่
-window.applyFilters = () => {
-    currentPage = 0; // กลับไปเริ่มหน้า 1 ใหม่
+    // ตรวจสอบความถูกต้อง
+    if (!pageNum || pageNum < 1 || pageNum > currentTotalPages) {
+        showToast(`กรุณาระบุหน้า 1 - ${currentTotalPages}`, 'warning');
+        // รีเซ็ตเลขในช่องกลับเป็นหน้าปัจจุบัน
+        document.getElementById('page-input').value = currentPage + 1;
+        return;
+    }
+
+    // แปลงเป็น index (เพราะระบบนับเริ่ม 0 แต่คนนับเริ่ม 1)
+    currentPage = pageNum - 1;
     loadLogs();
 };
