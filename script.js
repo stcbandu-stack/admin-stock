@@ -188,12 +188,20 @@ function updatePaginationUI(totalCount) {
 
 // --- 3. ระบบเบิก/เติมสต็อก (หัวใจสำคัญของการแก้ Logic) ---
 window.openAction = (id, type) => {
+    // 1. ค้นหาข้อมูลสินค้าจาก ID เพื่อเอาชื่อมาโชว์
+    const item = allItems.find(x => x.id === id);
+    const itemName = item ? item.name : ''; // ถ้าเจอให้เอาชื่อมา ถ้าไม่เจอให้เป็นค่าว่าง
+
     document.getElementById('action-item-id').value = id;
     document.getElementById('action-type').value = type;
     document.getElementById('action-amount').value = '';
     document.getElementById('action-date').value = new Date().toISOString().split('T')[0];
-    document.getElementById('action-title').innerText = type === 'RESTOCK' ? 'เติมสต็อค' : 'เบิกของ';
     
+    // 2. ปรับข้อความ Title ให้มีชื่อสินค้าต่อท้าย
+    const actionText = type === 'RESTOCK' ? 'เติมสต็อค' : 'เบิกของ';
+    document.getElementById('action-title').innerText = `${actionText} - ${itemName}`; // ผลลัพธ์: "เบิกของ - ปากกาน้ำเงิน"
+    
+    // จัดการการแสดงผลฟิลด์ต่างๆ (เหมือนเดิม)
     if(type === 'WITHDRAW') document.getElementById('withdraw-fields').classList.remove('hidden');
     else document.getElementById('withdraw-fields').classList.add('hidden');
     
@@ -363,9 +371,16 @@ async function addItem() {
 }
 
 window.deleteItem = (id) => { 
-    customConfirm('คุณต้องการลบรายการนี้ใช่หรือไม่?', async () => {
+    // 1. ค้นหาชื่อสินค้าก่อน
+    const item = allItems.find(x => x.id === id);
+    const itemName = item ? item.name : 'รายการนี้'; // กันเหนียวเผื่อไม่เจอ
+
+    // 2. ส่งชื่อสินค้าไปแสดงในข้อความยืนยัน
+    customConfirm(`คุณต้องการลบ "${itemName}" ใช่หรือไม่?`, async () => {
+        // ถ้ากด Yes ก็ทำตามเดิม
         await db.from('items').update({ is_active: false }).eq('id', id);
-        showToast('ลบรายการสำเร็จ', 'success'); loadItems();
+        showToast(`ลบ "${itemName}" สำเร็จ`, 'success'); 
+        loadItems();
     });
 };
 
