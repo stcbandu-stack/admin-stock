@@ -7,7 +7,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600&display=swap" rel="stylesheet">
-	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <style> body { font-family: 'Sarabun', sans-serif; } </style>
 </head>
 <body class="bg-gray-50 text-gray-800">
@@ -19,85 +19,90 @@
     
     <div class="flex items-center gap-3 md:gap-6">
         <a href="index.html" class="text-sm md:text-base font-bold text-black hover:text-red-600">
-            <i class="fa-solid fa-house md:hidden"></i> <span class="hidden md:inline">หน้าหลัก</span> </a>
-
-        <a href="history.html" class="text-sm md:text-base text-gray-500 hover:text-red-600 transition">
-            <span class="md:hidden">ประวัติ</span> <span class="hidden md:inline">ประวัติการทำรายการ</span> </a>
-        
+            <i class="fa-solid fa-house md:hidden"></i> <span class="hidden md:inline">หน้าหลัก</span>
+        </a>
+        <a href="history.html" class="text-sm md:text-base text-gray-500 border-b-2 border-black">
+            <span class="md:hidden">ประวัติ</span> <span class="hidden md:inline">ประวัติการทำรายการ</span>
+        </a>
         <div id="auth-section"></div>
     </div>
 </nav>
 
     <div class="max-w-6xl mx-auto p-6">
- <div class="flex justify-between items-center mb-6">
-    <h2 class="text-2xl font-bold border-l-4 border-red-600 pl-3">ประวัติการทำรายการทั้งหมด</h2>
-</div>
-
-<div class="bg-white p-4 rounded-xl shadow-sm border border-gray-100 mb-6">
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div class="relative">
-            <label class="text-xs font-bold text-gray-500 ml-1"><i class="fa-solid fa-calendar-check text-red-600"></i> เลือกเดือน</label>
-            <select id="filter-month" onchange="applyFilters()" class="w-full border-2 border-gray-100 p-2 rounded-lg text-sm outline-none focus:border-red-600">
-                <option value="">ทั้งหมดทุกเดือน</option>
-                <option value="01">มกราคม</option><option value="02">กุมภาพันธ์</option>
-                <option value="03">มีนาคม</option><option value="04">เมษายน</option>
-                <option value="05">พฤษภาคม</option><option value="06">มิถุนายน</option>
-                <option value="07">กรกฎาคม</option><option value="08">สิงหาคม</option>
-                <option value="09">กันยายน</option><option value="10">ตุลาคม</option>
-                <option value="11">พฤศจิกายน</option><option value="12">ธันวาคม</option>
-            </select>
+        <div class="flex justify-between items-center mb-6">
+            <h2 class="text-2xl font-bold border-l-4 border-red-600 pl-3">ประวัติการทำรายการทั้งหมด</h2>
         </div>
-        <div class="relative">
-            <label class="text-xs font-bold text-gray-500 ml-1"><i class="fa-solid fa-location-dot text-red-600"></i> กรองสาขา</label>
-            <input type="text" id="filter-branch" oninput="applyFilters()" placeholder="พิมพ์ชื่อสาขา..." class="w-full border-2 border-gray-100 p-2 rounded-lg text-sm outline-none focus:border-red-600">
-        </div>
-        <div class="flex items-end">
-            <button onclick="exportLogsToCSV()" class="w-full bg-green-600 text-white py-2 rounded-lg font-bold hover:bg-green-700 transition flex items-center justify-center gap-2">
-                <i class="fa-solid fa-file-csv"></i> Export to CSV
-            </button>
-        </div>
-    </div>
-</div>
 
-<div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-    <div class="overflow-x-auto">
-        <table class="w-full text-left text-sm">
-            <thead class="bg-gray-100 text-gray-700 uppercase tracking-wider">
-                <tr>
-                    <th class="p-3">วันที่</th>
-                    <th class="p-3">รายการ</th>
-                    <th class="p-3">ผู้ทำรายการ</th>
-                    <th class="p-3">สาขา</th>
-                    <th class="p-3">หมายเหตุ</th>
-                    <th class="p-3 text-right">จำนวน</th>
-                    <th class="p-3 text-right">คงเหลือ</th> 
-                </tr>
-            </thead>
-            <tbody id="log-table-body">
-                </tbody>
-        </table>
-    </div>
-    
-<div class="bg-gray-50 p-4 border-t border-gray-100 flex flex-col md:flex-row justify-between items-center gap-4">
-        <span class="text-xs text-gray-500 font-bold" id="page-info">กำลังโหลด...</span>
-        
-        <div class="flex items-center gap-2">
-            <button onclick="changePage(-1)" id="prev-btn" class="w-8 h-8 flex items-center justify-center bg-white border rounded shadow-sm text-gray-400 disabled:opacity-50 hover:bg-gray-50 transition">
-                <i class="fa-solid fa-chevron-left"></i>
-            </button>
-
-            <div class="flex items-center gap-1 bg-white border rounded px-2 py-1 shadow-sm">
-                <span class="text-xs text-gray-400">หน้า</span>
-                <input type="number" id="page-input" min="1" 
-                       class="w-12 text-center text-sm font-bold text-gray-700 outline-none focus:text-red-600"
-                       onchange="jumpToPage(this.value)"
-                       onkeydown="if(event.key === 'Enter') jumpToPage(this.value)">
-                <span class="text-xs text-gray-400">/ <span id="total-pages-display">-</span></span>
+        <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-100 mb-6">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div class="relative">
+                    <label class="text-xs font-bold text-gray-500 ml-1"><i class="fa-solid fa-calendar-check text-red-600"></i> เลือกเดือน</label>
+                    <select id="filter-month" onchange="applyFilters()" class="w-full border-2 border-gray-100 p-2 rounded-lg text-sm outline-none focus:border-red-600">
+                        <option value="">ทั้งหมดทุกเดือน</option>
+                        <option value="01">มกราคม</option><option value="02">กุมภาพันธ์</option>
+                        <option value="03">มีนาคม</option><option value="04">เมษายน</option>
+                        <option value="05">พฤษภาคม</option><option value="06">มิถุนายน</option>
+                        <option value="07">กรกฎาคม</option><option value="08">สิงหาคม</option>
+                        <option value="09">กันยายน</option><option value="10">ตุลาคม</option>
+                        <option value="11">พฤศจิกายน</option><option value="12">ธันวาคม</option>
+                    </select>
+                </div>
+                <div class="relative">
+                    <label class="text-xs font-bold text-gray-500 ml-1"><i class="fa-solid fa-location-dot text-red-600"></i> กรองสาขา</label>
+                    <input type="text" id="filter-branch" oninput="applyFilters()" placeholder="พิมพ์ชื่อสาขา..." class="w-full border-2 border-gray-100 p-2 rounded-lg text-sm outline-none focus:border-red-600">
+                </div>
+                <div class="flex items-end">
+                    <button onclick="exportLogsToCSV()" class="w-full bg-green-600 text-white py-2 rounded-lg font-bold hover:bg-green-700 transition flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-file-csv"></i> Export to CSV
+                    </button>
+                </div>
             </div>
+        </div>
 
-            <button onclick="changePage(1)" id="next-btn" class="w-8 h-8 flex items-center justify-center bg-white border rounded shadow-sm text-gray-400 disabled:opacity-50 hover:bg-gray-50 transition">
-                <i class="fa-solid fa-chevron-right"></i>
-            </button>
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+            <div class="overflow-x-auto">
+                <table class="w-full text-left text-sm">
+                    <thead class="bg-gray-100 text-gray-700 uppercase tracking-wider">
+                        <tr>
+                            <th class="p-3">วันที่ทำรายการ</th>
+                            <th class="p-3">รายการสินค้า</th>
+                            <th class="p-3">ผู้เบิก</th>
+                            <th class="p-3">สาขา</th>
+                            <th class="p-3">กิจกรรม</th>
+                            <th class="p-3">สถานที่</th>
+                            <th class="p-3">วันที่จัด</th>
+                            <th class="p-3">หมายเหตุ</th>
+                            <th class="p-3 text-right">จำนวน</th>
+                            <th class="p-3 text-right">คงเหลือ</th> 
+                        </tr>
+                    </thead>
+                    <tbody id="log-table-body">
+                        </tbody>
+                </table>
+            </div>
+            
+            <div class="bg-gray-50 p-4 border-t border-gray-100 flex flex-col md:flex-row justify-between items-center gap-4">
+                <span class="text-xs text-gray-500 font-bold" id="page-info">กำลังโหลด...</span>
+                
+                <div class="flex items-center gap-2">
+                    <button onclick="changePage(-1)" id="prev-btn" class="w-8 h-8 flex items-center justify-center bg-white border rounded shadow-sm text-gray-400 disabled:opacity-50 hover:bg-gray-50 transition">
+                        <i class="fa-solid fa-chevron-left"></i>
+                    </button>
+
+                    <div class="flex items-center gap-1 bg-white border rounded px-2 py-1 shadow-sm">
+                        <span class="text-xs text-gray-400">หน้า</span>
+                        <input type="number" id="page-input" min="1" 
+                               class="w-12 text-center text-sm font-bold text-gray-700 outline-none focus:text-red-600"
+                               onchange="jumpToPage(this.value)"
+                               onkeydown="if(event.key === 'Enter') jumpToPage(this.value)">
+                        <span class="text-xs text-gray-400">/ <span id="total-pages-display">-</span></span>
+                    </div>
+
+                    <button onclick="changePage(1)" id="next-btn" class="w-8 h-8 flex items-center justify-center bg-white border rounded shadow-sm text-gray-400 disabled:opacity-50 hover:bg-gray-50 transition">
+                        <i class="fa-solid fa-chevron-right"></i>
+                    </button>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -113,20 +118,7 @@
         </div>
     </div>
 
+    <div id="toast-container" class="fixed inset-0 flex flex-col items-center justify-center z-[100] pointer-events-none gap-4"></div>
     <script src="script.js"></script>
-	
-	<div id="toast-container" class="fixed inset-0 flex flex-col items-center justify-center z-[100] pointer-events-none gap-4"></div>
-
-    <div id="modal-confirm" class="fixed inset-0 bg-black/50 hidden flex items-center justify-center z-[110]">
-        <div class="bg-white p-8 rounded-2xl w-96 shadow-2xl text-center transform scale-95 transition-all">
-            <i class="fa-solid fa-circle-question text-6xl text-yellow-500 mb-4"></i>
-            <h2 class="text-2xl font-bold mb-2">ยืนยันการลบ?</h2>
-            <p id="confirm-message" class="text-gray-500 mb-6 text-lg">รายการนี้จะถูกซ่อนออกจากระบบ</p>
-            <div class="flex gap-3 justify-center">
-                <button onclick="toggleModal('modal-confirm', false)" class="px-6 py-2 bg-gray-200 rounded-lg font-bold text-gray-700">ยกเลิก</button>
-                <button id="confirm-yes-btn" class="px-6 py-2 bg-red-600 text-white rounded-lg font-bold hover:bg-red-700">ยืนยันลบ</button>
-            </div>
-        </div>
-    </div>
 </body>
 </html>
