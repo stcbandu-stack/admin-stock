@@ -218,58 +218,76 @@ window.deleteItem = (id) => {
     });
 };
 
+// ฟังก์ชัน Export CSV (ดึงข้อมูลทั้งหมดตามตัวกรอง ไม่สนใจหน้า)
 window.exportLogsToCSV = async () => {
     // 1. ดึงค่า Filter จากหน้าจอมาใช้
     const month = document.getElementById('filter-month')?.value;
     const branch = document.getElementById('filter-branch')?.value;
 
-    showToast('กำลังเตรียมไฟล์ข้อมูล...', 'info');
+    showToast('กำลังประมวลผลข้อมูลทั้งหมด...', 'info');
 
-    // 2. เริ่มสร้าง Query แบบเดียวกับ loadLogs แต่ไม่เอา range (เพราะจะเอาทั้งหมดที่กรอง)
+    // 2. สร้าง Query พื้นฐาน (ดึงทั้งหมด ไม่จำกัดจำนวน)
     let query = db.from('logs').select('*');
 
+    // 3. ใส่ตัวกรองให้เหมือนกับที่ตาเห็นในตารางเป๊ะๆ
     if (month) {
-        const year = new Date().getFullYear(); // 2026
-        query = query.gte('report_date', `${year}-${month}-01`).lte('report_date', `${year}-${month}-31`);
+        const year = new Date().getFullYear(); 
+        // ใช้ logic เดียวกับ loadLogs เพื่อความแม่นยำ
+        query = query.gte('report_date', `${year}-${month}-01`)
+                     .lte('report_date', `${year}-${month}-31`);
     }
 
     if (branch) {
         query = query.ilike('branch', `%${branch}%`);
     }
 
-    const { data, error } = await query.order('created_at', { ascending: false });
+    // 4. ดึงข้อมูลจริง (สังเกตว่าไม่มี .range หรือ .limit)
+    const { data, error } = await query.order('created_at', { ascending: false }).limit(100000);
 
-    if (error || !data.length) return showToast('ไม่พบข้อมูลตามที่กรองไว้', 'warning');
+    if (error) {
+        console.error(error);
+        return showToast('เกิดข้อผิดพลาดในการดึงข้อมูล', 'error');
+    }
 
-    // 3. แปลงข้อมูลเป็น CSV
+    if (!data || data.length === 0) {
+        return showToast('ไม่พบข้อมูลตามเงื่อนไขที่เลือก', 'warning');
+    }
+
+    // 5. แปลงข้อมูลเป็น CSV
+    // \uFEFF คือ BOM เพื่อให้ Excel อ่านภาษาไทยออก
     let csvContent = "\uFEFFวันที่,รายการสินค้า,ผู้ทำรายการ,สาขา,หมายเหตุ,จำนวน,ยอดคงเหลือ\n";
+    
     data.forEach(log => {
         const date = log.report_date ? new Date(log.report_date).toLocaleDateString('th-TH') : '-';
         const isW = log.action_type === 'WITHDRAW';
-        const user = isW ? log.user_name : 'Admin';
+        const user = isW ? log.user_name : 'Admin'; // ถ้าเติมของ ให้ขึ้น Admin เสมอ
         const branchCol = isW ? log.branch : 'เติมสต็อก';
+        // ใส่เครื่องหมาย + หรือ - หน้าตัวเลข
         const amount = (isW ? '-' : '+') + log.amount;
+        // ลบเครื่องหมาย , ในหมายเหตุออก เพื่อไม่ให้ CSV พัง
         const note = (log.note || '-').replace(/,/g, ' '); 
         const balance = log.balance_after ?? '-';
 
+        // จัด Format CSV: "ค่า","ค่า","ค่า"
         csvContent += `"${date}","${log.item_name}","${user}","${branchCol}","${note}","${amount}","${balance}"\n`;
     });
 
-    // 4. สร้าง Link ดาวน์โหลด
+    // 6. สร้าง Link และสั่งดาวน์โหลด
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.setAttribute("href", url);
     
-    // ตั้งชื่อไฟล์ตาม Filter ที่เลือก
-    const fileName = `stock_report_${month ? 'Month' + month : 'All'}_${new Date().toLocaleDateString('th-TH')}.csv`;
-    link.setAttribute("download", fileName);
+    // ตั้งชื่อไฟล์ให้สื่อความหมาย เช่น stock_report_Month01.csv
+    const timeStamp = new Date().toISOString().slice(0,10);
+    const fileName = `StockReport_${month ? 'Month'+month : 'AllYear'}_${timeStamp}.csv`;
     
+    link.setAttribute("download", fileName);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
     
-    showToast('ส่งออกข้อมูลสำเร็จแล้ว', 'success');
+    showToast(`ดาวน์โหลดเรียบร้อย (${data.length} รายการ)`, 'success');
 };
 
 let currentPage = 0;
