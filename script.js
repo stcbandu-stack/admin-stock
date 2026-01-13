@@ -322,13 +322,33 @@ window.openAction = (id, type) => {
     document.getElementById('action-item-id').value = id;
     document.getElementById('action-type').value = type;
     document.getElementById('action-amount').value = '';
-    document.getElementById('action-date').value = new Date().toISOString().split('T')[0];
+    
+    // ตั้งค่าเริ่มต้นเป็น "วันนี้" เสมอ
+    const dateInput = document.getElementById('action-date');
+    dateInput.value = new Date().toISOString().split('T')[0];
     
     const actionText = type === 'RESTOCK' ? 'เติมสต็อค' : 'เบิกของ';
     document.getElementById('action-title').innerText = `${actionText} - ${itemName}`;
     
-    if(type === 'WITHDRAW') document.getElementById('withdraw-fields').classList.remove('hidden');
-    else document.getElementById('withdraw-fields').classList.add('hidden');
+    if(type === 'WITHDRAW') {
+        // เปิดช่องกรอกรายละเอียดการเบิก
+        document.getElementById('withdraw-fields').classList.remove('hidden');
+        
+        // --- ส่วนที่เพิ่ม: ล็อกวันที่ (ห้ามแก้ไข) ---
+        // ถ้าท่านเป็น VIP (Super Admin) และอยากให้แก้ได้ ให้เพิ่มเงื่อนไข if(!isVip) ครอบตรงนี้ครับ
+        // แต่ถ้าเอาตามโจทย์คือล็อกทุกคน ก็ใช้แบบนี้ได้เลย:
+        dateInput.readOnly = true; 
+        dateInput.classList.add('bg-gray-100', 'text-gray-500', 'cursor-not-allowed'); // ถมสีเทา
+    }
+    else {
+        // ปิดช่องรายละเอียด (เพราะเติมของไม่ต้องใช้)
+        document.getElementById('withdraw-fields').classList.add('hidden');
+        
+        // --- ส่วนที่เพิ่ม: ปลดล็อกวันที่ (สำหรับเติมสต็อค) ---
+        // เผื่อต้องคีย์บิลซื้อของย้อนหลัง
+        dateInput.readOnly = false;
+        dateInput.classList.remove('bg-gray-100', 'text-gray-500', 'cursor-not-allowed'); // คืนสีปกติ
+    }
     
     toggleModal('modal-action', true);
 };
