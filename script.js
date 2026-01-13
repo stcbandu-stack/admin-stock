@@ -322,6 +322,8 @@ window.openAction = (id, type) => {
     document.getElementById('action-item-id').value = id;
     document.getElementById('action-type').value = type;
     document.getElementById('action-amount').value = '';
+    // ล้างค่าหมายเหตุเก่าทิ้งด้วย เพื่อความสะอาด
+    document.getElementById('action-note').value = ''; 
     
     // ตั้งค่าเริ่มต้นเป็น "วันนี้" เสมอ
     const dateInput = document.getElementById('action-date');
@@ -331,23 +333,21 @@ window.openAction = (id, type) => {
     document.getElementById('action-title').innerText = `${actionText} - ${itemName}`;
     
     if(type === 'WITHDRAW') {
-        // เปิดช่องกรอกรายละเอียดการเบิก
+        // เปิดช่องรายละเอียดเฉพาะการเบิก (พวกสาขา กิจกรรม)
         document.getElementById('withdraw-fields').classList.remove('hidden');
         
-        // --- ส่วนที่เพิ่ม: ล็อกวันที่ (ห้ามแก้ไข) ---
-        // ถ้าท่านเป็น VIP (Super Admin) และอยากให้แก้ได้ ให้เพิ่มเงื่อนไข if(!isVip) ครอบตรงนี้ครับ
-        // แต่ถ้าเอาตามโจทย์คือล็อกทุกคน ก็ใช้แบบนี้ได้เลย:
+        // --- ล็อกวันที่ (ห้ามแก้ไข) ---
         dateInput.readOnly = true; 
-        dateInput.classList.add('bg-gray-100', 'text-gray-500', 'cursor-not-allowed'); // ถมสีเทา
+        // เปลี่ยนสีเป็นเทาๆ ให้รู้ว่าแก้ไม่ได้
+        dateInput.classList.add('bg-gray-100', 'text-gray-500', 'cursor-not-allowed'); 
     }
     else {
-        // ปิดช่องรายละเอียด (เพราะเติมของไม่ต้องใช้)
+        // ปิดช่องรายละเอียดเบิก (แต่หมายเหตุยังอยู่นะ เพราะเราย้าย HTML ออกมาแล้ว)
         document.getElementById('withdraw-fields').classList.add('hidden');
         
-        // --- ส่วนที่เพิ่ม: ปลดล็อกวันที่ (สำหรับเติมสต็อค) ---
-        // เผื่อต้องคีย์บิลซื้อของย้อนหลัง
+        // --- ปลดล็อกวันที่ (เผื่อคีย์บิลย้อนหลังตอนเติมของ) ---
         dateInput.readOnly = false;
-        dateInput.classList.remove('bg-gray-100', 'text-gray-500', 'cursor-not-allowed'); // คืนสีปกติ
+        dateInput.classList.remove('bg-gray-100', 'text-gray-500', 'cursor-not-allowed'); 
     }
     
     toggleModal('modal-action', true);
