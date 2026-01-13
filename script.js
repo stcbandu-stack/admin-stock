@@ -10,15 +10,17 @@ let allLogs = [];
 let currentPage = 0;
 let currentTotalPages = 1; 
 const pageSize = 25; 
+let isVip = false; // สำหรับระบบสิทธิ์ VIP
+let viewMode = 'grid'; // 'grid' หรือ 'list' <--- เพิ่มตัวแปรนี้
 
 // เริ่มทำงานเมื่อเว็บโหลด
 window.onload = async () => {
     checkUser(); 
-    if (document.getElementById('item-grid')) loadItems();
-    if (document.getElementById('log-table-body')) {
-        // ถ้าอยู่หน้าประวัติ ให้โหลดประวัติ
-        loadLogs(); 
-    }
+    
+    // ตรวจสอบว่าอยู่หน้าไหน แล้วโหลดข้อมูลให้ถูก
+    if (document.getElementById('item-grid')) loadItems(); // หน้าหลัก
+    if (document.getElementById('storage-grid')) loadItems('storage'); // หน้า Storage
+    if (document.getElementById('log-table-body')) loadLogs(); // หน้าประวัติ
 };
 
 // --- ระบบแจ้งเตือน (Toast Notification) ---
@@ -45,53 +47,139 @@ window.customConfirm = (message, callback) => {
     toggleModal('modal-confirm', true);
 };
 
+// --- จัดการมุมมอง (Grid/List) เพิ่มใหม่ ---
+window.switchView = (mode) => {
+    viewMode = mode;
+    const btnGrid = document.getElementById('btn-view-grid');
+    const btnList = document.getElementById('btn-view-list');
+    
+    // สลับสีปุ่ม
+    if(mode === 'grid') {
+        btnGrid.className = 'px-3 py-1.5 rounded text-sm transition bg-black text-white shadow';
+        btnList.className = 'px-3 py-1.5 rounded text-sm transition text-gray-500 hover:bg-gray-100';
+    } else {
+        btnList.className = 'px-3 py-1.5 rounded text-sm transition bg-black text-white shadow';
+        btnGrid.className = 'px-3 py-1.5 rounded text-sm transition text-gray-500 hover:bg-gray-100';
+    }
+    
+    // เรนเดอร์ใหม่
+    renderItems(allItems);
+};
+
 // --- 1. จัดการรายการสินค้า ---
-async function loadItems() {
-    const grid = document.getElementById('item-grid');
+async function loadItems(mode = 'normal') {
+    const gridId = mode === 'storage' ? 'storage-grid' : 'item-grid';
+    const grid = document.getElementById(gridId);
+    
     if (grid) grid.innerHTML = '<div class="text-center col-span-full py-20 text-gray-400 font-bold animate-pulse">กำลังโหลดข้อมูล...</div>';
     
     const { data, error } = await db.from('items').select('*').eq('is_active', true).order('quantity', { ascending: false });
     
     if (error) return console.error(error);
     allItems = data;
-    renderItems(data);
-    
-    const lowStock = data.filter(i => i.quantity > 0 && i.quantity <= 5);
-    if (lowStock.length > 0) showToast(`มีของใกล้หมด ${lowStock.length} รายการ`, 'warning');
+
+    if (mode === 'storage') {
+        renderStorage(data);
+    } else {
+        renderItems(data);
+        const lowStock = data.filter(i => i.quantity > 0 && i.quantity <= 5);
+        if (lowStock.length > 0) showToast(`มีของใกล้หมด ${lowStock.length} รายการ`, 'warning');
+    }
 }
 
+// ฟังก์ชัน Render หลัก (แก้ไขให้รองรับทั้ง Grid และ List)
 function renderItems(items) {
-    const grid = document.getElementById('item-grid');
-    if (!grid) return;
-    grid.innerHTML = items.length ? '' : '<div class="text-center col-span-full py-10 text-gray-400">ไม่พบรายการ...</div>'; 
+    const container = document.getElementById('item-grid');
+    if (!container) return;
     
-    items.forEach(item => {
-        const isOut = item.quantity <= 0;
-        // ** แก้ไขตรงนี้: ใช้ total_quantity ที่สร้างใหม่ **
-        const total = item.total_quantity || item.quantity; 
+    container.innerHTML = items.length ? '' : '<div class="text-center col-span-full py-10 text-gray-400">ไม่พบรายการ...</div>'; 
+    
+    if (viewMode === 'grid') {
+        // --- แสดงผลแบบการ์ด (Grid) ---
+        container.className = 'grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-6'; // ใส่ Class Grid
+        
+        items.forEach(item => {
+            const isOut = item.quantity <= 0;
+            const total = item.total_quantity || item.quantity; 
 
-        const adminBtns = currentUser ? `
-            <div class="flex gap-1 mt-2 pt-2 border-t border-gray-100">
-                <button onclick="openAction(${item.id}, 'RESTOCK')" class="flex-1 py-1 bg-gray-100 rounded text-xs md:text-sm flex items-center justify-center gap-1">เติม</button>
-                <button onclick="openAction(${item.id}, 'WITHDRAW')" class="flex-1 py-1 bg-black text-white rounded text-xs md:text-sm flex items-center justify-center gap-1">เบิก</button>
-            </div>
-            <div class="flex gap-1 mt-1">
-                <button onclick="openEditModal(${item.id})" class="flex-1 text-yellow-600 text-xs border border-yellow-600 rounded py-1 flex items-center justify-center gap-1">แก้ไข</button>
-                <button onclick="deleteItem(${item.id})" class="flex-1 text-red-500 text-xs border border-red-500 rounded py-1 flex items-center justify-center gap-1">ลบ</button>
-            </div>` : '';
-            
-        grid.innerHTML += `
-            <div class="bg-white border border-gray-200 rounded-lg overflow-hidden hover:shadow-lg transition">
-                <div class="w-full aspect-[4/5] bg-gray-100 relative">
-                    <img src="${item.image_url || 'https://via.placeholder.com/300'}" class="w-full h-full object-cover ${isOut ? 'grayscale' : ''}">
-                    
-                    <div class="absolute top-2 right-2 ${isOut ? 'bg-gray-500' : 'bg-red-600'} text-white text-xs px-2 py-1 rounded shadow-md">
-                        ${isOut ? 'ของหมด' : `คงเหลือ ${item.quantity}/${total}`}
-                    </div>
+            const adminBtns = currentUser ? `
+                <div class="flex gap-1 mt-2 pt-2 border-t border-gray-100">
+                    <button onclick="openAction(${item.id}, 'RESTOCK')" class="flex-1 py-1 bg-gray-100 rounded text-xs md:text-sm flex items-center justify-center gap-1">เติม</button>
+                    <button onclick="openAction(${item.id}, 'WITHDRAW')" class="flex-1 py-1 bg-black text-white rounded text-xs md:text-sm flex items-center justify-center gap-1">เบิก</button>
                 </div>
-                <div class="p-4"><h3 class="font-bold text-lg">${item.name}</h3><p class="text-gray-500 text-sm h-10 overflow-hidden text-ellipsis">${item.description || '-'}</p>${adminBtns}</div>
-            </div>`;
-    });
+                <div class="flex gap-1 mt-1">
+                    <button onclick="openEditModal(${item.id})" class="flex-1 text-yellow-600 text-xs border border-yellow-600 rounded py-1 flex items-center justify-center gap-1">แก้ไข</button>
+                    <button onclick="deleteItem(${item.id})" class="flex-1 text-red-500 text-xs border border-red-500 rounded py-1 flex items-center justify-center gap-1">ลบ</button>
+                </div>` : '';
+                
+            container.innerHTML += `
+                <div class="bg-white border border-gray-200 rounded-lg overflow-hidden hover:shadow-lg transition">
+                    <div class="w-full aspect-[4/5] bg-gray-100 relative">
+                        <img src="${item.image_url || 'https://via.placeholder.com/300'}" class="w-full h-full object-cover ${isOut ? 'grayscale' : ''}">
+                        
+                        <div class="absolute top-2 right-2 ${isOut ? 'bg-gray-500' : 'bg-red-600'} text-white text-xs px-2 py-1 rounded shadow-md">
+                            ${isOut ? 'ของหมด' : `คงเหลือ ${item.quantity}/${total}`}
+                        </div>
+                    </div>
+                    <div class="p-4"><h3 class="font-bold text-lg">${item.name}</h3><p class="text-gray-500 text-sm h-10 overflow-hidden text-ellipsis">${item.description || '-'}</p>${adminBtns}</div>
+                </div>`;
+        });
+    } else {
+        // --- แสดงผลแบบตาราง (List) ---
+        container.className = 'bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden'; // ใส่ Class Container ตาราง
+
+        // หัวตาราง
+        let tableHTML = `
+            <div class="overflow-x-auto">
+                <table class="w-full text-left text-sm">
+                    <thead class="bg-gray-100 text-gray-700 uppercase tracking-wider">
+                        <tr>
+                            <th class="p-3">รูปภาพ</th>
+                            <th class="p-3">ชื่อสินค้า</th>
+                            <th class="p-3">รายละเอียด</th>
+                            <th class="p-3 text-center">คงเหลือ</th>
+                            <th class="p-3 text-center">คงคลัง (Total)</th>
+                            ${currentUser ? '<th class="p-3 text-center">จัดการ</th>' : ''}
+                        </tr>
+                    </thead>
+                    <tbody>`;
+        
+        // วนลูปสร้างแถว
+        items.forEach(item => {
+            const isOut = item.quantity <= 0;
+            const total = item.total_quantity || item.quantity;
+            
+            const adminActions = currentUser ? `
+                <td class="p-3">
+                    <div class="flex gap-1 justify-center">
+                        <button onclick="openAction(${item.id}, 'WITHDRAW')" class="w-8 h-8 bg-black text-white rounded hover:bg-gray-800" title="เบิก"><i class="fa-solid fa-minus"></i></button>
+                        <button onclick="openAction(${item.id}, 'RESTOCK')" class="w-8 h-8 bg-gray-200 text-black rounded hover:bg-gray-300" title="เติม"><i class="fa-solid fa-plus"></i></button>
+                        <button onclick="openEditModal(${item.id})" class="w-8 h-8 text-yellow-600 border border-yellow-600 rounded hover:bg-yellow-50" title="แก้ไข"><i class="fa-solid fa-pen"></i></button>
+                        <button onclick="deleteItem(${item.id})" class="w-8 h-8 text-red-600 border border-red-600 rounded hover:bg-red-50" title="ลบ"><i class="fa-solid fa-trash"></i></button>
+                    </div>
+                </td>` : '';
+
+            tableHTML += `
+                <tr class="border-b hover:bg-gray-50">
+                    <td class="p-3">
+                        <img src="${item.image_url || 'https://via.placeholder.com/100'}" class="w-12 h-12 object-cover rounded-md border ${isOut ? 'grayscale' : ''}">
+                    </td>
+                    <td class="p-3 font-bold text-gray-800">${item.name}</td>
+                    <td class="p-3 text-gray-500 truncate max-w-xs">${item.description || '-'}</td>
+                    <td class="p-3 text-center">
+                        <span class="${isOut ? 'bg-gray-500' : 'bg-red-600'} text-white px-2 py-0.5 rounded text-xs">
+                            ${isOut ? 'หมด' : item.quantity}
+                        </span>
+                    </td>
+                    <td class="p-3 text-center font-mono text-gray-600">${total}</td>
+                    ${adminActions}
+                </tr>
+            `;
+        });
+
+        tableHTML += `</tbody></table></div>`;
+        container.innerHTML = tableHTML;
+    }
 }
 
 window.filterItems = () => {
@@ -99,10 +187,54 @@ window.filterItems = () => {
     renderItems(allItems.filter(i => i.name.toLowerCase().includes(term) || (i.description || '').toLowerCase().includes(term)));
 };
 
-// --- 2. จัดการประวัติ (Pagination & Logic) ---
+// ฟังก์ชัน Render หน้า Storage (เหมือนเดิม)
+function renderStorage(items) {
+    const grid = document.getElementById('storage-grid');
+    if (!grid) return;
+    grid.innerHTML = items.length ? '' : '<div class="text-center col-span-full py-10 text-gray-400">ไม่พบรายการ...</div>'; 
+    
+    items.forEach(item => {
+        const total = item.total_quantity || item.quantity;
+        const isOut = item.quantity <= 0;
+        const isLow = item.quantity > 0 && item.quantity < (total * 0.2); 
+
+        let numColor = 'text-green-600';
+        if (isOut) numColor = 'text-gray-400';
+        else if (isLow) numColor = 'text-red-600';
+
+        grid.innerHTML += `
+            <div class="bg-white border border-gray-200 rounded-lg overflow-hidden shadow-sm hover:shadow-md transition flex flex-col">
+                <div class="w-full aspect-[4/5] bg-gray-100 relative">
+                    <img src="${item.image_url || 'https://via.placeholder.com/300'}" class="w-full h-full object-cover ${isOut ? 'grayscale opacity-50' : ''}">
+                    ${isOut ? '<div class="absolute inset-0 flex items-center justify-center bg-black/10 font-bold text-gray-600">หมด</div>' : ''}
+                </div>
+                
+                <div class="p-3 flex-1 flex flex-col justify-between text-center">
+                    <div>
+                        <h3 class="font-bold text-sm text-gray-800 line-clamp-1" title="${item.name}">${item.name}</h3>
+                        <p class="text-xs text-gray-400 mt-1 line-clamp-1">${item.description || '-'}</p>
+                    </div>
+                    
+                    <div class="mt-3 pt-2 border-t border-gray-100">
+                        <div class="text-xs text-gray-400 uppercase font-bold tracking-wider">คงเหลือ</div>
+                        <div class="text-3xl font-extrabold ${numColor} font-mono leading-none mt-1">
+                            ${item.quantity}<span class="text-sm text-gray-300 font-normal">/${total}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>`;
+    });
+}
+
+window.filterStorage = () => {
+    const term = document.getElementById('storage-search').value.toLowerCase();
+    renderStorage(allItems.filter(i => i.name.toLowerCase().includes(term)));
+};
+
+// --- ส่วนที่เหลือ (ประวัติ, Auth, Action) เหมือนเดิมเป๊ะ ---
 async function loadLogs() {
     const tbody = document.getElementById('log-table-body');
-    if (!tbody) return; // ถ้าไม่มีตาราง (เช่นอยู่หน้าหลัก) ไม่ต้องทำอะไร
+    if (!tbody) return; 
     tbody.innerHTML = '<tr><td colspan="10" class="p-10 text-center text-gray-400 animate-pulse font-bold">กำลังดึงข้อมูลประวัติ...</td></tr>';
 
     const month = document.getElementById('filter-month')?.value;
@@ -119,7 +251,6 @@ async function loadLogs() {
         query = query.ilike('branch', `%${branch}%`);
     }
 
-    // Pagination
     const from = currentPage * pageSize;
     const to = from + pageSize - 1;
     
@@ -149,11 +280,9 @@ function renderLogs(logs) {
                 <td class="p-3 font-semibold">${log.item_name}</td>
                 <td class="p-3">${isW ? log.user_name : 'Admin'}</td>
                 <td class="p-3 text-gray-500 text-xs">${isW ? log.branch : 'เติมสต็อก'}</td>
-                
                 <td class="p-3">${isW ? (log.activity_name || '-') : '-'}</td>
                 <td class="p-3 text-gray-500">${isW ? (log.activity_location || '-') : '-'}</td>
                 <td class="p-3 text-gray-500 whitespace-nowrap">${isW ? actDate : '-'}</td>
-
                 <td class="p-3 text-gray-400 italic">${log.note || '-'}</td>
                 <td class="p-3 text-right font-bold ${isW ? 'text-red-600' : 'text-green-600'}">${isW ? '-' : '+'}${log.amount}</td>
                 <td class="p-3 text-right font-mono font-bold text-blue-600 bg-blue-50">${log.balance_after ?? '-'}</td>
@@ -186,22 +315,18 @@ function updatePaginationUI(totalCount) {
     nextBtn.disabled = (currentPage + 1) >= currentTotalPages;
 }
 
-// --- 3. ระบบเบิก/เติมสต็อก (หัวใจสำคัญของการแก้ Logic) ---
 window.openAction = (id, type) => {
-    // 1. ค้นหาข้อมูลสินค้าจาก ID เพื่อเอาชื่อมาโชว์
     const item = allItems.find(x => x.id === id);
-    const itemName = item ? item.name : ''; // ถ้าเจอให้เอาชื่อมา ถ้าไม่เจอให้เป็นค่าว่าง
+    const itemName = item ? item.name : '';
 
     document.getElementById('action-item-id').value = id;
     document.getElementById('action-type').value = type;
     document.getElementById('action-amount').value = '';
     document.getElementById('action-date').value = new Date().toISOString().split('T')[0];
     
-    // 2. ปรับข้อความ Title ให้มีชื่อสินค้าต่อท้าย
     const actionText = type === 'RESTOCK' ? 'เติมสต็อค' : 'เบิกของ';
-    document.getElementById('action-title').innerText = `${actionText} - ${itemName}`; // ผลลัพธ์: "เบิกของ - ปากกาน้ำเงิน"
+    document.getElementById('action-title').innerText = `${actionText} - ${itemName}`;
     
-    // จัดการการแสดงผลฟิลด์ต่างๆ (เหมือนเดิม)
     if(type === 'WITHDRAW') document.getElementById('withdraw-fields').classList.remove('hidden');
     else document.getElementById('withdraw-fields').classList.add('hidden');
     
@@ -214,7 +339,6 @@ async function submitAction() {
     const amount = parseInt(document.getElementById('action-amount').value);
     const reportDate = document.getElementById('action-date').value; 
 
-    // ดึงค่าใหม่
     const branch = document.getElementById('action-branch').value;
     const actName = document.getElementById('action-activity-name').value;
     const actLoc = document.getElementById('action-activity-location').value;
@@ -228,38 +352,33 @@ async function submitAction() {
             return showToast('กรุณากรอกข้อมูลการเบิกให้ครบถ้วน', 'warning');
         }
 
-        // Logic ตรวจสอบวันที่คีย์ย้อนหลัง
         const dReport = new Date(reportDate);
         const dActivity = new Date(actDate);
         dReport.setHours(0,0,0,0);
         dActivity.setHours(0,0,0,0);
 
-        if (dReport > dActivity) {
+        if (dReport > dActivity && !isVip) {
             return showToast('หากต้องการคีย์ย้อนหลัง โปรดติดต่อผู้ดูแลระบบ', 'error');
+        }
+        if (dReport > dActivity && isVip) {
+             showToast('Admin Override: บันทึกย้อนหลังสำเร็จ', 'info');
         }
     }
 
-    // ** ตรงนี้คือจุดเปลี่ยน Logic 15/30 **
     const { data: item } = await db.from('items').select('*').eq('id', id).single();
     
     let newQty = 0;
-    let newTotal = item.total_quantity || item.quantity; // เริ่มต้นเอาค่าเดิมมาตั้ง
+    let newTotal = item.total_quantity || item.quantity; 
 
     if (type === 'WITHDRAW') {
         if (item.quantity < amount) return showToast('สต็อกไม่พอเบิก!', 'error');
         newQty = item.quantity - amount;
-        // กรณีเบิก: ไม่เปลี่ยน newTotal (ตัวส่วนเท่าเดิม)
     } else {
-        // กรณีเติม: เพิ่มจำนวน และรีเซ็ตฐาน (ตัวส่วน) ใหม่
         newQty = item.quantity + amount;
         newTotal = newQty; 
     }
 
-    // อัปเดตทั้ง 2 ค่า
-    await db.from('items').update({ 
-        quantity: newQty,
-        total_quantity: newTotal 
-    }).eq('id', id);
+    await db.from('items').update({ quantity: newQty, total_quantity: newTotal }).eq('id', id);
     
     await db.from('logs').insert({
         item_id: id,
@@ -279,23 +398,32 @@ async function submitAction() {
     showToast('บันทึกรายการสำเร็จ', 'success');
     toggleModal('modal-action', false);
     
-    // โหลดข้อมูลใหม่ (ดูว่าอยู่หน้าไหน)
     if(document.getElementById('item-grid')) loadItems();
+    if(document.getElementById('storage-grid')) loadItems('storage');
     if(document.getElementById('log-table-body')) loadLogs(); 
 }
 
-// --- 4. ฟังก์ชันเบื้องหลัง (Auth / CRUD / CSV) ---
 async function handleLogin() {
     const { data, error } = await db.auth.signInWithPassword({ email: document.getElementById('login-email').value, password: document.getElementById('login-pass').value });
     if (error) showToast('อีเมลหรือรหัสผ่านไม่ถูกต้อง', 'error');
-    else { showToast('ยินดีต้อนรับ Admin', 'success'); checkUser(); if(document.getElementById('item-grid')) loadItems(); toggleModal('modal-login', false); }
+    else { 
+        showToast('ยินดีต้อนรับ Admin', 'success'); 
+        checkUser(); 
+        if(document.getElementById('item-grid')) loadItems(); 
+        toggleModal('modal-login', false); 
+    }
 }
 
 async function checkUser() {
     const { data: { session } } = await db.auth.getSession();
     currentUser = session?.user;
+
+    if (currentUser) {
+        const { data } = await db.from('user_permissions').select('can_backdate').eq('email', currentUser.email).single();
+        if (data && data.can_backdate) isVip = true; else isVip = false;
+    }
+
     const authDiv = document.getElementById('auth-section');
-    
     if (authDiv) {
         authDiv.innerHTML = currentUser ? 
             `<button onclick="logout()" class="text-red-600 font-bold flex items-center gap-1"><i class="fa-solid fa-right-from-bracket"></i> ออกจากระบบ</button>` : 
@@ -304,22 +432,13 @@ async function checkUser() {
     
     const adminToolbar = document.getElementById('admin-toolbar');
     if(adminToolbar) {
-        if(currentUser) adminToolbar.classList.remove('hidden');
-        else adminToolbar.classList.add('hidden');
+        if(currentUser) adminToolbar.classList.remove('hidden'); else adminToolbar.classList.add('hidden');
     }
 }
 
 async function logout() {
-    try {
-        await db.auth.signOut(); 
-    } catch (error) {
-        console.warn('Logout error (ignored):', error);
-    } finally {
-        currentUser = null; 
-        localStorage.clear(); 
-        showToast('ออกจากระบบแล้ว', 'info');
-        setTimeout(() => { window.location.reload(); }, 500);
-    }
+    try { await db.auth.signOut(); } catch (error) { console.warn('Logout error', error); } 
+    finally { currentUser = null; localStorage.clear(); showToast('ออกจากระบบแล้ว', 'info'); setTimeout(() => { window.location.reload(); }, 500); }
 }
 
 window.toggleModal = (id, show) => { const el = document.getElementById(id); if(show) el.classList.remove('hidden'); else el.classList.add('hidden'); };
@@ -358,26 +477,15 @@ async function addItem() {
         imageUrl = db.storage.from('item-images').getPublicUrl(fileName).data.publicUrl;
     }
     
-    // ** สร้างของใหม่ ให้ total = qty **
-    await db.from('items').insert({ 
-        name, 
-        description: document.getElementById('add-desc').value, 
-        quantity: qty, 
-        total_quantity: qty, 
-        image_url: imageUrl 
-    });
-
+    await db.from('items').insert({ name, description: document.getElementById('add-desc').value, quantity: qty, total_quantity: qty, image_url: imageUrl });
     showToast('เพิ่มของชำร่วยใหม่สำเร็จ', 'success'); toggleModal('modal-add', false); loadItems();
 }
 
 window.deleteItem = (id) => { 
-    // 1. ค้นหาชื่อสินค้าก่อน
     const item = allItems.find(x => x.id === id);
-    const itemName = item ? item.name : 'รายการนี้'; // กันเหนียวเผื่อไม่เจอ
+    const itemName = item ? item.name : 'รายการนี้';
 
-    // 2. ส่งชื่อสินค้าไปแสดงในข้อความยืนยัน
     customConfirm(`คุณต้องการลบ "${itemName}" ใช่หรือไม่?`, async () => {
-        // ถ้ากด Yes ก็ทำตามเดิม
         await db.from('items').update({ is_active: false }).eq('id', id);
         showToast(`ลบ "${itemName}" สำเร็จ`, 'success'); 
         loadItems();
@@ -387,23 +495,18 @@ window.deleteItem = (id) => {
 window.exportLogsToCSV = async () => {
     const month = document.getElementById('filter-month')?.value;
     const branch = document.getElementById('filter-branch')?.value;
-
     showToast('กำลังประมวลผลข้อมูลทั้งหมด...', 'info');
-
     let query = db.from('logs').select('*');
-
     if (month) {
         const year = new Date().getFullYear(); 
         query = query.gte('report_date', `${year}-${month}-01`).lte('report_date', `${year}-${month}-31`);
     }
     if (branch) query = query.ilike('branch', `%${branch}%`);
-
     const { data, error } = await query.order('created_at', { ascending: false }).limit(100000);
 
     if (error || !data || data.length === 0) return showToast('ไม่พบข้อมูลหรือเกิดข้อผิดพลาด', 'warning');
 
     let csvContent = "\uFEFFวันที่ทำรายการ,รายการสินค้า,ผู้เบิก,สาขา,ชื่อกิจกรรม,สถานที่,วันที่จัดกิจกรรม,หมายเหตุ,จำนวน,ยอดคงเหลือ\n";
-    
     data.forEach(log => {
         const date = log.report_date ? new Date(log.report_date).toLocaleDateString('th-TH') : '-';
         const isW = log.action_type === 'WITHDRAW';
@@ -415,7 +518,6 @@ window.exportLogsToCSV = async () => {
         const actName = (log.activity_name || '-').replace(/,/g, ' ');
         const actLoc = (log.activity_location || '-').replace(/,/g, ' ');
         const actDate = log.activity_date ? new Date(log.activity_date).toLocaleDateString('th-TH') : '-';
-
         csvContent += `"${date}","${log.item_name}","${user}","${branchCol}","${actName}","${actLoc}","${actDate}","${note}","${amount}","${balance}"\n`;
     });
 
@@ -428,7 +530,6 @@ window.exportLogsToCSV = async () => {
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-    
     showToast(`ดาวน์โหลดเรียบร้อย (${data.length} รายการ)`, 'success');
 };
 
@@ -451,7 +552,4 @@ window.changePage = (direction) => {
     }
 };
 
-window.applyFilters = () => {
-    currentPage = 0; 
-    loadLogs();
-};
+window.applyFilters = () => { currentPage = 0; loadLogs(); };
