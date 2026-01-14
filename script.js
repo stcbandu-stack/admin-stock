@@ -54,6 +54,11 @@ window.customConfirm = (message, callback) => {
     toggleModal('modal-confirm', true);
 };
 
+// Helper Format เงิน
+const formatCurrency = (amount) => {
+    return new Intl.NumberFormat('th-TH', { style: 'currency', currency: 'THB' }).format(amount || 0);
+};
+
 // ==========================================
 // 4. AUTHENTICATION
 // ==========================================
@@ -110,7 +115,7 @@ window.filterItems = () => {
 };
 
 // ==========================================
-// 6. RENDERING (Grid & List with New Logic)
+// 6. RENDERING (Updated with Cost)
 // ==========================================
 function renderItems(items) {
     const container = document.getElementById('item-grid');
@@ -119,14 +124,14 @@ function renderItems(items) {
     container.innerHTML = items.length ? '' : '<div class="text-center col-span-full py-10 text-gray-400">ไม่พบรายการ...</div>'; 
     
     if (viewMode === 'grid') {
-        // --- Grid View (3 กล่อง: ฟ้า/แดง/เขียว) ---
-        container.className = 'grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-6 items-stretch'; // เพิ่ม items-stretch
+        container.className = 'grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-6 items-stretch'; 
         
         items.forEach(item => {
             const isOut = item.quantity <= 0;
             const totalIn = item.total_quantity || 0;
             const balance = item.quantity || 0;
             const used = totalIn - balance;
+            const cost = item.cost_per_unit || 0; // ราคาต้นทุน
 
             const adminBtns = currentUser ? `
                 <div class="flex gap-1 mt-3 pt-3 border-t border-gray-100">
@@ -140,18 +145,20 @@ function renderItems(items) {
                 
             container.innerHTML += `
                 <div class="bg-white border border-gray-200 rounded-lg overflow-hidden hover:shadow-xl transition-all duration-300 flex flex-col h-full">
-                    
                     <div class="w-full aspect-[4/5] bg-gray-100 relative group overflow-hidden">
-                        
                         <img src="${item.image_url || 'https://via.placeholder.com/300'}" 
                              class="absolute inset-0 w-full h-full object-cover object-center transition-transform duration-500 group-hover:scale-110 ${isOut ? 'grayscale' : ''}">
-                        
                         ${isOut ? '<div class="absolute inset-0 flex items-center justify-center bg-black/40 backdrop-blur-sm z-10"><span class="bg-red-600 text-white px-4 py-1 rounded-full text-sm font-bold shadow-lg">สินค้าหมด</span></div>' : ''}
                     </div>
                     
                     <div class="p-4 flex flex-col flex-grow">
                         <div class="mb-4">
                             <h3 class="font-bold text-lg text-gray-800 leading-tight mb-1 line-clamp-1" title="${item.name}">${item.name}</h3>
+                            <div class="flex items-center gap-2 mb-1">
+                                <span class="text-[10px] bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded font-bold border border-gray-200">
+                                    ต้นทุน/ชิ้น: ${cost > 0 ? cost.toLocaleString() : '-'} บ.
+                                </span>
+                            </div>
                             <p class="text-gray-500 text-xs line-clamp-2 h-8 overflow-hidden">${item.description || '-'}</p>
                         </div>
                         
@@ -176,7 +183,7 @@ function renderItems(items) {
                 </div>`;
         });
     } else {
-        // --- List View (Table with 3 Color Columns) - เหมือนเดิม ---
+        // --- List View ---
         container.className = 'bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden';
 
         let tableHTML = `
@@ -185,9 +192,9 @@ function renderItems(items) {
                     <thead class="bg-gray-100 text-gray-700 uppercase tracking-wider text-xs">
                         <tr>
                             <th class="p-3">สินค้า</th>
-                            <th class="p-3 text-center text-blue-700 bg-blue-50">รับเข้า (In)</th>
-                            <th class="p-3 text-center text-red-700 bg-red-50">ใช้ไป (Out)</th>
-                            <th class="p-3 text-center text-green-700 bg-green-50">คงเหลือ (Bal)</th>
+                            <th class="p-3 text-right">ต้นทุน/ชิ้น</th> <th class="p-3 text-center text-blue-700 bg-blue-50">รับเข้า</th>
+                            <th class="p-3 text-center text-red-700 bg-red-50">ใช้ไป</th>
+                            <th class="p-3 text-center text-green-700 bg-green-50">คงเหลือ</th>
                             ${currentUser ? '<th class="p-3 text-center">จัดการ</th>' : ''}
                         </tr>
                     </thead>
@@ -197,6 +204,7 @@ function renderItems(items) {
             const totalIn = item.total_quantity || 0;
             const balance = item.quantity || 0;
             const used = totalIn - balance;
+            const cost = item.cost_per_unit || 0;
             
             const adminActions = currentUser ? `
                 <td class="p-3 text-center">
@@ -219,6 +227,7 @@ function renderItems(items) {
                             </div>
                         </div>
                     </td>
+                    <td class="p-3 text-right font-mono text-gray-600">${cost > 0 ? cost.toLocaleString() : '-'}</td>
                     <td class="p-3 text-center font-bold text-blue-600 bg-blue-50/50">${totalIn}</td>
                     <td class="p-3 text-center font-bold text-red-600 bg-red-50/50">${used}</td>
                     <td class="p-3 text-center font-bold text-green-600 bg-green-50/50 text-base">${balance}</td>
@@ -247,10 +256,9 @@ window.switchView = (mode) => {
 };
 
 // ==========================================
-// 7. ACTIONS (Logic Calculation Changed!)
+// 7. ACTIONS (Logs save Cost Snapshot)
 // ==========================================
 
-// 7.1 Submit Action (Running Total Logic)
 async function submitAction() {
     const id = document.getElementById('action-item-id').value;
     const type = document.getElementById('action-type').value;
@@ -272,29 +280,27 @@ async function submitAction() {
         if (dReport > dActivity && !isVip) return showToast('หากต้องการคีย์ย้อนหลัง โปรดติดต่อผู้ดูแลระบบ', 'error');
     }
 
-    // --- NEW LOGIC: Cumulative Sum ---
     const { data: item } = await db.from('items').select('*').eq('id', id).single();
     
-    let newQty = 0;          // ยอดคงเหลือใหม่ (Balance)
-    let newTotal = item.total_quantity; // ยอดรับเข้าสะสม (Total In)
+    let newQty = 0;          
+    let newTotal = item.total_quantity; 
 
     if (type === 'WITHDRAW') {
         if (item.quantity < amount) return showToast('สต็อกไม่พอเบิก!', 'error');
         newQty = item.quantity - amount;
-        // การเบิก ไม่ทำให้ยอดรับเข้า (Total In) เปลี่ยนแปลง
     } else {
-        // การเติม (RESTOCK)
         newQty = item.quantity + amount;
-        newTotal = item.total_quantity + amount; // บวกสะสมเพิ่มเข้าไป (Cumulative)
+        newTotal = item.total_quantity + amount; 
     }
 
-    // Update DB
     await db.from('items').update({ quantity: newQty, total_quantity: newTotal }).eq('id', id);
     
+    // บันทึก Log พร้อม Cost Snapshot
     await db.from('logs').insert({
         item_id: id, item_name: item.name, action_type: type, amount: amount, balance_after: newQty,
         report_date: reportDate, user_name: document.getElementById('action-name').value || 'Admin', branch: type === 'WITHDRAW' ? branch : '-', 
-        note: note, activity_name: type === 'WITHDRAW' ? actName : null, activity_location: type === 'WITHDRAW' ? actLoc : null, activity_date: type === 'WITHDRAW' ? actDate : null
+        note: note, activity_name: type === 'WITHDRAW' ? actName : null, activity_location: type === 'WITHDRAW' ? actLoc : null, activity_date: type === 'WITHDRAW' ? actDate : null,
+        cost_per_unit: item.cost_per_unit || 0 // บันทึกต้นทุน ณ วันที่ทำรายการ
     });
 
     showToast('บันทึกรายการสำเร็จ', 'success');
@@ -305,10 +311,12 @@ async function submitAction() {
     if(document.getElementById('log-table-body')) loadLogs(); 
 }
 
-// 7.2 Add Item (Logic: เริ่มต้นยอดสะสมเท่ากับจำนวนแรกเข้า)
+// 7.2 Add Item (Updated with Cost)
 async function addItem() {
     const name = document.getElementById('add-name').value;
     const qty = document.getElementById('add-qty').value;
+    const cost = document.getElementById('add-cost').value || 0; // รับค่าต้นทุน
+
     if(!name || !qty) return showToast('กรุณากรอกชื่อและจำนวน', 'warning');
     
     const file = document.getElementById('add-image').files[0];
@@ -319,28 +327,23 @@ async function addItem() {
         imageUrl = db.storage.from('item-images').getPublicUrl(fileName).data.publicUrl;
     }
     
-    // Logic: ของใหม่ ยอดคงเหลือ = qty, ยอดรับเข้าสะสม = qty
     const { data: newItem, error } = await db.from('items').insert({ 
         name, description: document.getElementById('add-desc').value, 
-        quantity: qty, 
-        total_quantity: qty, // ตั้งต้นยอดสะสม
-        image_url: imageUrl 
+        quantity: qty, total_quantity: qty, image_url: imageUrl,
+        cost_per_unit: cost // บันทึกต้นทุน
     }).select().single();
 
     if(error) return showToast('เกิดข้อผิดพลาดในการบันทึก', 'error');
 
     await db.from('logs').insert({
         item_id: newItem.id, item_name: newItem.name, action_type: 'ADD_NEW', amount: parseInt(qty), balance_after: parseInt(qty),
-        report_date: new Date().toISOString().split('T')[0], user_name: 'Admin', branch: '-', note: 'เพิ่มของชำร่วยเข้าระบบ', activity_name: '-', activity_location: '-', activity_date: null
+        report_date: new Date().toISOString().split('T')[0], user_name: 'Admin', branch: '-', note: 'เพิ่มของชำร่วยเข้าระบบ', activity_name: '-', activity_location: '-', activity_date: null,
+        cost_per_unit: cost
     });
 
     showToast('เพิ่มสินค้าใหม่สำเร็จ', 'success'); toggleModal('modal-add', false); loadItems();
 }
 
-// --- ส่วนอื่นๆ (Modal Open/Close, Edit, Delete, Logs, Storage) เหมือนเดิม ---
-// (Copy โค้ดส่วนที่เหลือจากเวอร์ชั่น Clean Code ก่อนหน้านี้มาแปะต่อท้ายได้เลยครับ ส่วนนั้นไม่มีการเปลี่ยนแปลง Logic)
-
-// 7.3 Edit & Delete & Open Action & Logs (เอามาแปะให้ครบเพื่อความสะดวก)
 window.openAction = (id, type) => {
     const item = allItems.find(x => x.id === id);
     const itemName = item ? item.name : '';
@@ -362,18 +365,26 @@ window.openAction = (id, type) => {
     toggleModal('modal-action', true);
 };
 
+// 7.3 Edit (Updated with Cost)
 window.openEditModal = (id) => {
     const item = allItems.find(x => x.id === id);
     document.getElementById('edit-id').value = item.id;
     document.getElementById('edit-name').value = item.name;
     document.getElementById('edit-desc').value = item.description || '';
+    document.getElementById('edit-cost').value = item.cost_per_unit || ''; // ดึงราคาเดิมมาโชว์
     toggleModal('modal-edit', true);
 };
 
 window.submitEdit = async () => {
     const id = document.getElementById('edit-id').value;
     const file = document.getElementById('edit-image').files[0];
-    let updateData = { name: document.getElementById('edit-name').value, description: document.getElementById('edit-desc').value };
+    
+    let updateData = { 
+        name: document.getElementById('edit-name').value, 
+        description: document.getElementById('edit-desc').value,
+        cost_per_unit: document.getElementById('edit-cost').value || 0 // อัปเดตราคา
+    };
+    
     if (file) {
         const fileName = `edit-${Date.now()}.${file.name.split('.').pop()}`;
         await db.storage.from('item-images').upload(fileName, file);
@@ -389,22 +400,33 @@ window.deleteItem = (id) => {
     customConfirm(`คุณต้องการลบ "${itemName}" ใช่หรือไม่?`, async () => {
         await db.from('logs').insert({
             item_id: id, item_name: itemName, action_type: 'DELETE', amount: 0, balance_after: 0, 
-            report_date: new Date().toISOString().split('T')[0], user_name: 'Admin', branch: '-', note: 'นำของชำร่วยออกจากระบบ (Archived)', activity_name: '-', activity_location: '-', activity_date: null
+            report_date: new Date().toISOString().split('T')[0], user_name: 'Admin', branch: '-', note: 'นำของชำร่วยออกจากระบบ (Archived)', activity_name: '-', activity_location: '-', activity_date: null,
+            cost_per_unit: item.cost_per_unit || 0
         });
         await db.from('items').update({ is_active: false }).eq('id', id);
         showToast(`ลบ "${itemName}" สำเร็จ`, 'success'); loadItems();
     });
 };
 
+// ==========================================
+// 8. LOGS & HISTORY (Updated with Name Filter & Cost Columns)
+// ==========================================
 async function loadLogs() {
     const tbody = document.getElementById('log-table-body');
     if (!tbody) return; 
-    tbody.innerHTML = '<tr><td colspan="10" class="p-10 text-center text-gray-400 animate-pulse font-bold">กำลังดึงข้อมูลประวัติ...</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="12" class="p-10 text-center text-gray-400 animate-pulse font-bold">กำลังดึงข้อมูลประวัติ...</td></tr>';
+    
+    // Filters
     const month = document.getElementById('filter-month')?.value;
     const branch = document.getElementById('filter-branch')?.value;
+    const itemName = document.getElementById('filter-item-name')?.value; // ฟิลเตอร์ใหม่
+
     let query = db.from('logs').select('*', { count: 'exact' });
+
     if (month) { const year = new Date().getFullYear(); query = query.gte('report_date', `${year}-${month}-01`).lte('report_date', `${year}-${month}-31`); }
     if (branch) query = query.ilike('branch', `%${branch}%`);
+    if (itemName) query = query.ilike('item_name', `%${itemName}%`); // ค้นหาชื่อ
+
     const from = currentPage * pageSize;
     const to = from + pageSize - 1;
     const { data, error, count } = await query.order('created_at', { ascending: false }).range(from, to);
@@ -422,58 +444,42 @@ function renderLogs(logs) {
         const date = log.report_date ? new Date(log.report_date).toLocaleDateString('th-TH') : '-';
         const actDate = log.activity_date ? new Date(log.activity_date).toLocaleDateString('th-TH') : '-';
 
-        // 1. สร้าง Badge สีสวยๆ ตามประเภทรายการ
+        // Badges
         let typeBadge = '';
         let amountClass = '';
         let amountPrefix = '';
 
         switch(log.action_type) {
-            case 'WITHDRAW':
-                // สีแดง สำหรับการเบิก
-                typeBadge = `<span class="bg-red-100 text-red-700 px-2 py-1 rounded-md text-xs font-bold border border-red-200"><i class="fa-solid fa-minus"></i> เบิกออก</span>`;
-                amountClass = 'text-red-600';
-                amountPrefix = '-';
-                break;
-            case 'RESTOCK':
-                // สีเขียว สำหรับการเติม
-                typeBadge = `<span class="bg-green-100 text-green-700 px-2 py-1 rounded-md text-xs font-bold border border-green-200"><i class="fa-solid fa-plus"></i> เติมสต็อก</span>`;
-                amountClass = 'text-green-600';
-                amountPrefix = '+';
-                break;
-            case 'ADD_NEW':
-                // สีน้ำเงิน สำหรับของใหม่
-                typeBadge = `<span class="bg-blue-100 text-blue-700 px-2 py-1 rounded-md text-xs font-bold border border-blue-200"><i class="fa-solid fa-star"></i> เพิ่มของใหม่</span>`;
-                amountClass = 'text-blue-600';
-                amountPrefix = '+';
-                break;
-            case 'DELETE':
-                // สีเทา สำหรับการลบ
-                typeBadge = `<span class="bg-gray-100 text-gray-600 px-2 py-1 rounded-md text-xs font-bold border border-gray-200"><i class="fa-solid fa-trash"></i> ลบสินค้า</span>`;
-                amountClass = 'text-gray-400';
-                amountPrefix = ''; 
-                break;
-            default:
-                typeBadge = `<span class="bg-gray-100 text-gray-500 px-2 py-1 rounded text-xs">ทั่วไป</span>`;
+            case 'WITHDRAW': typeBadge = `<span class="bg-red-100 text-red-700 px-2 py-1 rounded-md text-xs font-bold border border-red-200"><i class="fa-solid fa-minus"></i> เบิกออก</span>`; amountClass = 'text-red-600'; amountPrefix = '-'; break;
+            case 'RESTOCK': typeBadge = `<span class="bg-green-100 text-green-700 px-2 py-1 rounded-md text-xs font-bold border border-green-200"><i class="fa-solid fa-plus"></i> เติมสต็อก</span>`; amountClass = 'text-green-600'; amountPrefix = '+'; break;
+            case 'ADD_NEW': typeBadge = `<span class="bg-blue-100 text-blue-700 px-2 py-1 rounded-md text-xs font-bold border border-blue-200"><i class="fa-solid fa-star"></i> เพิ่มของใหม่</span>`; amountClass = 'text-blue-600'; amountPrefix = '+'; break;
+            case 'DELETE': typeBadge = `<span class="bg-gray-100 text-gray-600 px-2 py-1 rounded-md text-xs font-bold border border-gray-200"><i class="fa-solid fa-trash"></i> ลบของชำร่วย</span>`; amountClass = 'text-gray-400'; amountPrefix = ''; break;
+            default: typeBadge = `<span class="bg-gray-100 text-gray-500 px-2 py-1 rounded text-xs">ทั่วไป</span>`;
         }
 
-        // 2. จัดการคอลัมน์สาขา (ถ้าไม่ใช่เบิก ให้ขีดละ - ไว้)
         const branchDisplay = isW ? log.branch : '<span class="text-gray-300">-</span>';
+        
+        // Cost Calculation
+        const unitCost = log.cost_per_unit || 0;
+        const totalValue = unitCost * log.amount;
 
-        // 3. Render HTML (เพิ่มคอลัมน์ typeBadge เข้าไป)
         tbody.innerHTML += `
             <tr class="border-b hover:bg-gray-50 text-xs md:text-sm">
                 <td class="p-3 text-gray-500 whitespace-nowrap">${date}</td>
                 <td class="p-3 font-semibold text-gray-700">${log.item_name}</td>
-                
                 <td class="p-3 text-center whitespace-nowrap">${typeBadge}</td>
-                
                 <td class="p-3">${isW ? log.user_name : 'Admin'}</td>
-                <td class="p-3 text-gray-600">${branchDisplay}</td> <td class="p-3">${isW ? (log.activity_name || '-') : '-'}</td>
+                <td class="p-3 text-gray-600">${branchDisplay}</td> 
+                <td class="p-3">${isW ? (log.activity_name || '-') : '-'}</td>
                 <td class="p-3 text-gray-500">${isW ? (log.activity_location || '-') : '-'}</td>
                 <td class="p-3 text-gray-500 whitespace-nowrap">${isW ? actDate : '-'}</td>
                 <td class="p-3 text-gray-400 italic">${log.note || '-'}</td>
+                
                 <td class="p-3 text-right font-bold ${amountClass}">${amountPrefix}${log.amount}</td>
                 <td class="p-3 text-right font-mono font-bold text-blue-600 bg-blue-50">${log.balance_after ?? '-'}</td>
+                
+                <td class="p-3 text-right text-gray-500 font-mono">${unitCost > 0 ? unitCost.toLocaleString() : '-'}</td>
+                <td class="p-3 text-right font-bold text-gray-700 font-mono">${totalValue > 0 ? totalValue.toLocaleString() : '-'}</td>
             </tr>`;
     });
 }
@@ -514,22 +520,25 @@ window.applyFilters = () => { currentPage = 0; loadLogs(); };
 window.exportLogsToCSV = async () => {
     const month = document.getElementById('filter-month')?.value;
     const branch = document.getElementById('filter-branch')?.value;
+    const itemName = document.getElementById('filter-item-name')?.value; 
+
     showToast('กำลังประมวลผลข้อมูล...', 'info');
     let query = db.from('logs').select('*');
     if (month) { const year = new Date().getFullYear(); query = query.gte('report_date', `${year}-${month}-01`).lte('report_date', `${year}-${month}-31`); }
     if (branch) query = query.ilike('branch', `%${branch}%`);
+    if (itemName) query = query.ilike('item_name', `%${itemName}%`);
+
     const { data, error } = await query.order('created_at', { ascending: false }).limit(100000);
     if (error || !data || data.length === 0) return showToast('ไม่พบข้อมูล', 'warning');
 
-    // 🔥 เพิ่มหัวตาราง "ประเภทรายการ" ใน CSV
-    let csvContent = "\uFEFFวันที่ทำรายการ,รายการสินค้า,ประเภทรายการ,ผู้ทำรายการ,สาขา,ชื่อกิจกรรม,สถานที่,วันที่จัดกิจกรรม,หมายเหตุ,จำนวน,ยอดคงเหลือ\n";
+    // 🔥 1. แก้หัวตาราง CSV (เรียงใหม่)
+    let csvContent = "\uFEFFวันที่ทำรายการ,รายการสินค้า,ประเภทรายการ,ผู้ทำรายการ,สาขา,ชื่อกิจกรรม,สถานที่,วันที่จัดกิจกรรม,หมายเหตุ,จำนวน,ยอดคงเหลือ,ต้นทุนต่อชิ้น,มูลค่ารวม\n";
     
     data.forEach(log => {
         const date = log.report_date ? new Date(log.report_date).toLocaleDateString('th-TH') : '-';
         const isW = log.action_type === 'WITHDRAW';
         const user = isW ? log.user_name : 'Admin';
         
-        // แปลง action_type เป็นภาษาไทยสำหรับ CSV
         let typeThai = 'ทั่วไป';
         if (log.action_type === 'WITHDRAW') typeThai = 'เบิกออก';
         else if (log.action_type === 'RESTOCK') typeThai = 'เติมสต็อก';
@@ -544,8 +553,12 @@ window.exportLogsToCSV = async () => {
         const actLoc = (log.activity_location || '-').replace(/,/g, ' ');
         const actDate = log.activity_date ? new Date(log.activity_date).toLocaleDateString('th-TH') : '-';
         
-        // 🔥 เพิ่ม typeThai ลงในแถว
-        csvContent += `"${date}","${log.item_name}","${typeThai}","${user}","${branchCol}","${actName}","${actLoc}","${actDate}","${note}","${amount}","${balance}"\n`;
+        // Cost
+        const unitCost = log.cost_per_unit || 0;
+        const totalValue = unitCost * log.amount;
+
+        // 🔥 2. แก้ลำดับข้อมูลในแถว (เรียงใหม่)
+        csvContent += `"${date}","${log.item_name}","${typeThai}","${user}","${branchCol}","${actName}","${actLoc}","${actDate}","${note}","${amount}","${balance}","${unitCost}","${totalValue}"\n`;
     });
 
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
@@ -576,9 +589,9 @@ function renderStorage(items) {
         grid.innerHTML += `
             <div class="bg-white border border-gray-200 rounded-lg overflow-hidden shadow-sm hover:shadow-md transition flex flex-col">
                 <div class="w-full h-80 bg-gray-100 relative group">
-    <img src="${item.image_url || 'https://via.placeholder.com/300'}" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105 ${isOut ? 'grayscale' : ''}">
-    ${isOut ? '<div class="absolute inset-0 flex items-center justify-center bg-black/40 backdrop-blur-sm"><span class="bg-red-600 text-white px-4 py-1 rounded-full text-sm font-bold shadow-lg">ของหมด</span></div>' : ''}
-</div>
+                    <img src="${item.image_url || 'https://via.placeholder.com/300'}" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105 ${isOut ? 'grayscale' : ''}">
+                    ${isOut ? '<div class="absolute inset-0 flex items-center justify-center bg-black/40 backdrop-blur-sm"><span class="bg-red-600 text-white px-4 py-1 rounded-full text-sm font-bold shadow-lg">ของหมด</span></div>' : ''}
+                </div>
                 <div class="p-3 flex-1 flex flex-col justify-between text-center">
                     <div>
                         <h3 class="font-bold text-sm text-gray-800 line-clamp-1" title="${item.name}">${item.name}</h3>

@@ -47,6 +47,10 @@
                         <option value="11">พฤศจิกายน</option><option value="12">ธันวาคม</option>
                     </select>
                 </div>
+				<div class="relative">
+    <label class="text-xs font-bold text-gray-500 ml-1"><i class="fa-solid fa-box text-red-600"></i> ชื่อสินค้า</label>
+    <input type="text" id="filter-item-name" oninput="applyFilters()" placeholder="พิมพ์ชื่อสินค้า..." class="w-full border-2 border-gray-100 p-2 rounded-lg text-sm outline-none focus:border-red-600">
+</div>
                 <div class="relative">
                     <label class="text-xs font-bold text-gray-500 ml-1"><i class="fa-solid fa-location-dot text-red-600"></i> กรองสาขา</label>
                     <input type="text" id="filter-branch" oninput="applyFilters()" placeholder="พิมพ์ชื่อสาขา..." class="w-full border-2 border-gray-100 p-2 rounded-lg text-sm outline-none focus:border-red-600">
@@ -66,16 +70,19 @@
     <tr class="bg-gray-100 text-gray-700 uppercase tracking-wider">
         <th class="p-3">วันที่ทำรายการ</th>
         <th class="p-3">รายการสินค้า</th>
-        
         <th class="p-3 text-center">ประเภท</th>
-        <th class="p-3">ผู้ทำรายการ</th> <th class="p-3">สาขา</th>
+        <th class="p-3">ผู้ทำรายการ</th> 
+        <th class="p-3">สาขา</th>
         <th class="p-3">กิจกรรม</th>
         <th class="p-3">สถานที่</th>
         <th class="p-3">วันที่จัด</th>
         <th class="p-3">หมายเหตุ</th>
+        
         <th class="p-3 text-right">จำนวน</th>
-        <th class="p-3 text-right">คงเหลือ</th> 
-    </tr>
+        <th class="p-3 text-right">คงเหลือ</th>
+        <th class="p-3 text-right">ต้นทุน/ชิ้น</th>
+        <th class="p-3 text-right">มูลค่ารวม</th>
+        </tr>
 </thead>
                     <tbody id="log-table-body">
                         </tbody>
