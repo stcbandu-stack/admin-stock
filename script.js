@@ -20,6 +20,8 @@ let viewMode = 'grid'; // 'grid' | 'list'
 // ==========================================
 window.onload = async () => {
     await checkUser(); 
+    
+    // โหลดข้อมูลตามหน้าปัจจุบัน
     if (document.getElementById('item-grid')) loadItems();          
     if (document.getElementById('storage-grid')) loadItems('storage'); 
     if (document.getElementById('log-table-body')) loadLogs();      
@@ -54,11 +56,6 @@ window.customConfirm = (message, callback) => {
     toggleModal('modal-confirm', true);
 };
 
-// Helper Format เงิน
-const formatCurrency = (amount) => {
-    return new Intl.NumberFormat('th-TH', { style: 'currency', currency: 'THB' }).format(amount || 0);
-};
-
 // ==========================================
 // 4. AUTHENTICATION
 // ==========================================
@@ -67,34 +64,55 @@ async function handleLogin() {
     const password = document.getElementById('login-pass').value;
     const { data, error } = await db.auth.signInWithPassword({ email, password });
     if (error) { showToast('อีเมลหรือรหัสผ่านไม่ถูกต้อง', 'error'); } 
-    else { showToast('ยินดีต้อนรับ Admin', 'success'); await checkUser(); if(document.getElementById('item-grid')) loadItems(); toggleModal('modal-login', false); }
+    else { 
+        showToast('ยินดีต้อนรับ Admin', 'success'); 
+        await checkUser(); 
+        if(document.getElementById('item-grid')) loadItems(); 
+        toggleModal('modal-login', false); 
+    }
 }
 
 async function checkUser() {
     const { data: { session } } = await db.auth.getSession();
     currentUser = session?.user;
+    
     if (currentUser) {
+        // เช็คสิทธิ์ VIP (แก้ไขย้อนหลัง)
         const { data } = await db.from('user_permissions').select('can_backdate').eq('email', currentUser.email).single();
         isVip = !!(data && data.can_backdate);
-    } else { isVip = false; }
+    } else { 
+        isVip = false; 
+    }
     
+    updateAuthUI();
+}
+
+function updateAuthUI() {
     const authDiv = document.getElementById('auth-section');
     if (authDiv) {
         authDiv.innerHTML = currentUser ? 
             `<button onclick="logout()" class="text-red-600 font-bold flex items-center gap-1"><i class="fa-solid fa-right-from-bracket"></i> ออกจากระบบ</button>` : 
             `<button onclick="toggleModal('modal-login', true)" class="bg-black text-white px-4 py-1.5 rounded-full text-sm flex items-center gap-1"><i class="fa-solid fa-user-lock"></i> Staff Login</button>`;
     }
+    
     const adminToolbar = document.getElementById('admin-toolbar');
-    if(adminToolbar) { if(currentUser) adminToolbar.classList.remove('hidden'); else adminToolbar.classList.add('hidden'); }
+    if(adminToolbar) {
+        if(currentUser) adminToolbar.classList.remove('hidden');
+        else adminToolbar.classList.add('hidden');
+    }
 }
 
 async function logout() {
     try { await db.auth.signOut(); } catch (error) { console.warn('Logout error', error); } 
-    finally { currentUser = null; isVip = false; localStorage.clear(); showToast('ออกจากระบบแล้ว', 'info'); setTimeout(() => { window.location.reload(); }, 500); }
+    finally { 
+        currentUser = null; isVip = false; localStorage.clear(); 
+        showToast('ออกจากระบบแล้ว', 'info'); 
+        setTimeout(() => { window.location.reload(); }, 500); 
+    }
 }
 
 // ==========================================
-// 5. DATA LOADING
+// 5. DATA LOADING & RENDERING (ITEMS)
 // ==========================================
 async function loadItems(mode = 'normal') {
     const gridId = mode === 'storage' ? 'storage-grid' : 'item-grid';
@@ -105,8 +123,8 @@ async function loadItems(mode = 'normal') {
     if (error) return console.error(error);
     allItems = data;
 
-    if (mode === 'storage') { renderStorage(data); } 
-    else { renderItems(data); }
+    if (mode === 'storage') renderStorage(data); 
+    else renderItems(data);
 }
 
 window.filterItems = () => {
@@ -114,9 +132,6 @@ window.filterItems = () => {
     renderItems(allItems.filter(i => i.name.toLowerCase().includes(term) || (i.description || '').toLowerCase().includes(term)));
 };
 
-// ==========================================
-// 6. RENDERING (Updated with Cost)
-// ==========================================
 function renderItems(items) {
     const container = document.getElementById('item-grid');
     if (!container) return;
@@ -124,6 +139,7 @@ function renderItems(items) {
     container.innerHTML = items.length ? '' : '<div class="text-center col-span-full py-10 text-gray-400">ไม่พบรายการ...</div>'; 
     
     if (viewMode === 'grid') {
+        // --- Grid View (4:5 Aspect Ratio & Center Crop) ---
         container.className = 'grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-6 items-stretch'; 
         
         items.forEach(item => {
@@ -131,7 +147,7 @@ function renderItems(items) {
             const totalIn = item.total_quantity || 0;
             const balance = item.quantity || 0;
             const used = totalIn - balance;
-            const cost = item.cost_per_unit || 0; // ราคาต้นทุน
+            const cost = item.cost_per_unit || 0;
 
             const adminBtns = currentUser ? `
                 <div class="flex gap-1 mt-3 pt-3 border-t border-gray-100">
@@ -146,8 +162,7 @@ function renderItems(items) {
             container.innerHTML += `
                 <div class="bg-white border border-gray-200 rounded-lg overflow-hidden hover:shadow-xl transition-all duration-300 flex flex-col h-full">
                     <div class="w-full aspect-[4/5] bg-gray-100 relative group overflow-hidden">
-                        <img src="${item.image_url || 'https://via.placeholder.com/300'}" 
-                             class="absolute inset-0 w-full h-full object-cover object-center transition-transform duration-500 group-hover:scale-110 ${isOut ? 'grayscale' : ''}">
+                        <img src="${item.image_url || 'https://via.placeholder.com/300'}" class="absolute inset-0 w-full h-full object-cover object-center transition-transform duration-500 group-hover:scale-110 ${isOut ? 'grayscale' : ''}">
                         ${isOut ? '<div class="absolute inset-0 flex items-center justify-center bg-black/40 backdrop-blur-sm z-10"><span class="bg-red-600 text-white px-4 py-1 rounded-full text-sm font-bold shadow-lg">สินค้าหมด</span></div>' : ''}
                     </div>
                     
@@ -156,7 +171,7 @@ function renderItems(items) {
                             <h3 class="font-bold text-lg text-gray-800 leading-tight mb-1 line-clamp-1" title="${item.name}">${item.name}</h3>
                             <div class="flex items-center gap-2 mb-1">
                                 <span class="text-[10px] bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded font-bold border border-gray-200">
-                                    ต้นทุน/ชิ้น: ${cost > 0 ? cost.toLocaleString() : '-'} บ.
+                                    ทุน: ${cost > 0 ? cost.toLocaleString() : '-'} บ.
                                 </span>
                             </div>
                             <p class="text-gray-500 text-xs line-clamp-2 h-8 overflow-hidden">${item.description || '-'}</p>
@@ -164,18 +179,9 @@ function renderItems(items) {
                         
                         <div class="mt-auto">
                             <div class="grid grid-cols-3 gap-1">
-                                <div class="bg-blue-50 border border-blue-100 rounded p-1.5 text-center">
-                                    <div class="text-[9px] text-blue-500 font-bold uppercase">รับเข้า</div>
-                                    <div class="text-sm font-extrabold text-blue-700">${totalIn}</div>
-                                </div>
-                                <div class="bg-red-50 border border-red-100 rounded p-1.5 text-center">
-                                    <div class="text-[9px] text-red-500 font-bold uppercase">ใช้ไป</div>
-                                    <div class="text-sm font-extrabold text-red-700">${used}</div>
-                                </div>
-                                <div class="bg-green-50 border border-green-100 rounded p-1.5 text-center">
-                                    <div class="text-[9px] text-green-600 font-bold uppercase">คงเหลือ</div>
-                                    <div class="text-sm font-extrabold text-green-700">${balance}</div>
-                                </div>
+                                <div class="bg-blue-50 border border-blue-100 rounded p-1.5 text-center"><div class="text-[9px] text-blue-500 font-bold uppercase">รับเข้า</div><div class="text-sm font-extrabold text-blue-700">${totalIn}</div></div>
+                                <div class="bg-red-50 border border-red-100 rounded p-1.5 text-center"><div class="text-[9px] text-red-500 font-bold uppercase">ใช้ไป</div><div class="text-sm font-extrabold text-red-700">${used}</div></div>
+                                <div class="bg-green-50 border border-green-100 rounded p-1.5 text-center"><div class="text-[9px] text-green-600 font-bold uppercase">คงเหลือ</div><div class="text-sm font-extrabold text-green-700">${balance}</div></div>
                             </div>
                             ${adminBtns}
                         </div>
@@ -192,7 +198,8 @@ function renderItems(items) {
                     <thead class="bg-gray-100 text-gray-700 uppercase tracking-wider text-xs">
                         <tr>
                             <th class="p-3">สินค้า</th>
-                            <th class="p-3 text-right">ต้นทุน/ชิ้น</th> <th class="p-3 text-center text-blue-700 bg-blue-50">รับเข้า</th>
+                            <th class="p-3 text-right">ต้นทุน/ชิ้น</th>
+                            <th class="p-3 text-center text-blue-700 bg-blue-50">รับเข้า</th>
                             <th class="p-3 text-center text-red-700 bg-red-50">ใช้ไป</th>
                             <th class="p-3 text-center text-green-700 bg-green-50">คงเหลือ</th>
                             ${currentUser ? '<th class="p-3 text-center">จัดการ</th>' : ''}
@@ -256,16 +263,87 @@ window.switchView = (mode) => {
 };
 
 // ==========================================
-// 7. ACTIONS (Logs save Cost Snapshot)
+// 7. ACTIONS (ADD, EDIT, DELETE, RESTOCK, WITHDRAW)
 // ==========================================
+
+async function addItem() {
+    const name = document.getElementById('add-name').value;
+    const qty = document.getElementById('add-qty').value;
+    const cost = document.getElementById('add-cost').value || 0;
+    
+    if(!name || !qty) return showToast('กรุณากรอกชื่อและจำนวน', 'warning');
+    
+    const file = document.getElementById('add-image').files[0];
+    let imageUrl = '';
+    if(file) {
+        const fileName = `item-${Date.now()}.${file.name.split('.').pop()}`;
+        await db.storage.from('item-images').upload(fileName, file);
+        imageUrl = db.storage.from('item-images').getPublicUrl(fileName).data.publicUrl;
+    }
+    
+    // Insert Item
+    const { data: newItem, error } = await db.from('items').insert({ 
+        name, 
+        description: document.getElementById('add-desc').value, 
+        quantity: qty, 
+        total_quantity: qty, 
+        image_url: imageUrl,
+        cost_per_unit: cost
+    }).select().single();
+
+    if(error) return showToast('เกิดข้อผิดพลาดในการบันทึก', 'error');
+
+    // Insert Log
+    await db.from('logs').insert({
+        item_id: newItem.id, 
+        item_name: newItem.name, // เก็บไว้เผื่อ backup
+        action_type: 'ADD_NEW', 
+        amount: parseInt(qty), 
+        balance_after: parseInt(qty),
+        report_date: new Date().toISOString().split('T')[0], 
+        user_name: 'Admin', 
+        branch: '-', 
+        note: 'เพิ่มของชำร่วยเข้าระบบ', 
+        activity_name: '-', 
+        activity_location: '-', 
+        activity_date: null, 
+        cost_per_unit: cost
+    });
+
+    showToast('เพิ่มสินค้าใหม่สำเร็จ', 'success'); 
+    toggleModal('modal-add', false); 
+    loadItems();
+}
+
+window.openAction = (id, type) => {
+    const item = allItems.find(x => x.id === id);
+    document.getElementById('action-item-id').value = id;
+    document.getElementById('action-type').value = type;
+    document.getElementById('action-amount').value = '';
+    document.getElementById('action-note').value = ''; 
+    const dateInput = document.getElementById('action-date');
+    dateInput.value = new Date().toISOString().split('T')[0];
+    
+    const actionText = type === 'RESTOCK' ? 'เติมสต็อค' : 'เบิกของ';
+    document.getElementById('action-title').innerText = `${actionText} - ${item ? item.name : ''}`;
+    
+    if(type === 'WITHDRAW') {
+        document.getElementById('withdraw-fields').classList.remove('hidden');
+        dateInput.readOnly = true; 
+        dateInput.classList.add('bg-gray-100', 'text-gray-500', 'cursor-not-allowed'); 
+    } else {
+        document.getElementById('withdraw-fields').classList.add('hidden');
+        dateInput.readOnly = false; 
+        dateInput.classList.remove('bg-gray-100', 'text-gray-500', 'cursor-not-allowed'); 
+    }
+    toggleModal('modal-action', true);
+};
 
 async function submitAction() {
     const id = document.getElementById('action-item-id').value;
     const type = document.getElementById('action-type').value;
     const amount = parseInt(document.getElementById('action-amount').value);
     const reportDate = document.getElementById('action-date').value; 
-
-    // Fields
     const branch = document.getElementById('action-branch').value;
     const actName = document.getElementById('action-activity-name').value;
     const actLoc = document.getElementById('action-activity-location').value;
@@ -281,29 +359,37 @@ async function submitAction() {
     }
 
     const { data: item } = await db.from('items').select('*').eq('id', id).single();
-    
-    let newQty = 0;          
+    let newQty = 0; 
     let newTotal = item.total_quantity; 
 
     if (type === 'WITHDRAW') {
         if (item.quantity < amount) return showToast('สต็อกไม่พอเบิก!', 'error');
         newQty = item.quantity - amount;
     } else {
-        newQty = item.quantity + amount;
+        newQty = item.quantity + amount; 
         newTotal = item.total_quantity + amount; 
     }
 
     await db.from('items').update({ quantity: newQty, total_quantity: newTotal }).eq('id', id);
     
-    // บันทึก Log พร้อม Cost Snapshot
+    // บันทึก Log
     await db.from('logs').insert({
-        item_id: id, item_name: item.name, action_type: type, amount: amount, balance_after: newQty,
-        report_date: reportDate, user_name: document.getElementById('action-name').value || 'Admin', branch: type === 'WITHDRAW' ? branch : '-', 
-        note: note, activity_name: type === 'WITHDRAW' ? actName : null, activity_location: type === 'WITHDRAW' ? actLoc : null, activity_date: type === 'WITHDRAW' ? actDate : null,
-        cost_per_unit: item.cost_per_unit || 0 // บันทึกต้นทุน ณ วันที่ทำรายการ
+        item_id: id, 
+        item_name: item.name, 
+        action_type: type, 
+        amount: amount, 
+        balance_after: newQty,
+        report_date: reportDate, 
+        user_name: document.getElementById('action-name').value || 'Admin', 
+        branch: type === 'WITHDRAW' ? branch : '-', 
+        note: note, 
+        activity_name: type === 'WITHDRAW' ? actName : null, 
+        activity_location: type === 'WITHDRAW' ? actLoc : null, 
+        activity_date: type === 'WITHDRAW' ? actDate : null,
+        cost_per_unit: item.cost_per_unit || 0
     });
 
-    showToast('บันทึกรายการสำเร็จ', 'success');
+    showToast('บันทึกรายการสำเร็จ', 'success'); 
     toggleModal('modal-action', false);
     
     if(document.getElementById('item-grid')) loadItems();
@@ -311,78 +397,22 @@ async function submitAction() {
     if(document.getElementById('log-table-body')) loadLogs(); 
 }
 
-// 7.2 Add Item (Updated with Cost)
-async function addItem() {
-    const name = document.getElementById('add-name').value;
-    const qty = document.getElementById('add-qty').value;
-    const cost = document.getElementById('add-cost').value || 0; // รับค่าต้นทุน
-
-    if(!name || !qty) return showToast('กรุณากรอกชื่อและจำนวน', 'warning');
-    
-    const file = document.getElementById('add-image').files[0];
-    let imageUrl = '';
-    if(file) {
-        const fileName = `item-${Date.now()}.${file.name.split('.').pop()}`;
-        await db.storage.from('item-images').upload(fileName, file);
-        imageUrl = db.storage.from('item-images').getPublicUrl(fileName).data.publicUrl;
-    }
-    
-    const { data: newItem, error } = await db.from('items').insert({ 
-        name, description: document.getElementById('add-desc').value, 
-        quantity: qty, total_quantity: qty, image_url: imageUrl,
-        cost_per_unit: cost // บันทึกต้นทุน
-    }).select().single();
-
-    if(error) return showToast('เกิดข้อผิดพลาดในการบันทึก', 'error');
-
-    await db.from('logs').insert({
-        item_id: newItem.id, item_name: newItem.name, action_type: 'ADD_NEW', amount: parseInt(qty), balance_after: parseInt(qty),
-        report_date: new Date().toISOString().split('T')[0], user_name: 'Admin', branch: '-', note: 'เพิ่มของชำร่วยเข้าระบบ', activity_name: '-', activity_location: '-', activity_date: null,
-        cost_per_unit: cost
-    });
-
-    showToast('เพิ่มสินค้าใหม่สำเร็จ', 'success'); toggleModal('modal-add', false); loadItems();
-}
-
-window.openAction = (id, type) => {
-    const item = allItems.find(x => x.id === id);
-    const itemName = item ? item.name : '';
-    document.getElementById('action-item-id').value = id;
-    document.getElementById('action-type').value = type;
-    document.getElementById('action-amount').value = '';
-    document.getElementById('action-note').value = ''; 
-    const dateInput = document.getElementById('action-date');
-    dateInput.value = new Date().toISOString().split('T')[0];
-    const actionText = type === 'RESTOCK' ? 'เติมสต็อค' : 'เบิกของ';
-    document.getElementById('action-title').innerText = `${actionText} - ${itemName}`;
-    if(type === 'WITHDRAW') {
-        document.getElementById('withdraw-fields').classList.remove('hidden');
-        dateInput.readOnly = true; dateInput.classList.add('bg-gray-100', 'text-gray-500', 'cursor-not-allowed'); 
-    } else {
-        document.getElementById('withdraw-fields').classList.add('hidden');
-        dateInput.readOnly = false; dateInput.classList.remove('bg-gray-100', 'text-gray-500', 'cursor-not-allowed'); 
-    }
-    toggleModal('modal-action', true);
-};
-
-// 7.3 Edit (Updated with Cost)
 window.openEditModal = (id) => {
     const item = allItems.find(x => x.id === id);
     document.getElementById('edit-id').value = item.id;
     document.getElementById('edit-name').value = item.name;
     document.getElementById('edit-desc').value = item.description || '';
-    document.getElementById('edit-cost').value = item.cost_per_unit || ''; // ดึงราคาเดิมมาโชว์
+    document.getElementById('edit-cost').value = item.cost_per_unit || ''; 
     toggleModal('modal-edit', true);
 };
 
 window.submitEdit = async () => {
     const id = document.getElementById('edit-id').value;
     const file = document.getElementById('edit-image').files[0];
-    
     let updateData = { 
         name: document.getElementById('edit-name').value, 
         description: document.getElementById('edit-desc').value,
-        cost_per_unit: document.getElementById('edit-cost').value || 0 // อัปเดตราคา
+        cost_per_unit: document.getElementById('edit-cost').value || 0
     };
     
     if (file) {
@@ -390,48 +420,94 @@ window.submitEdit = async () => {
         await db.storage.from('item-images').upload(fileName, file);
         updateData.image_url = db.storage.from('item-images').getPublicUrl(fileName).data.publicUrl;
     }
+    
     await db.from('items').update(updateData).eq('id', id);
-    showToast('แก้ไขข้อมูลเรียบร้อย', 'success'); toggleModal('modal-edit', false); loadItems();
+    showToast('แก้ไขข้อมูลเรียบร้อย', 'success'); 
+    toggleModal('modal-edit', false); 
+    loadItems();
 };
 
 window.deleteItem = (id) => { 
     const item = allItems.find(x => x.id === id);
     const itemName = item ? item.name : 'รายการนี้';
+    
     customConfirm(`คุณต้องการลบ "${itemName}" ใช่หรือไม่?`, async () => {
         await db.from('logs').insert({
-            item_id: id, item_name: itemName, action_type: 'DELETE', amount: 0, balance_after: 0, 
-            report_date: new Date().toISOString().split('T')[0], user_name: 'Admin', branch: '-', note: 'นำของชำร่วยออกจากระบบ (Archived)', activity_name: '-', activity_location: '-', activity_date: null,
+            item_id: id, 
+            item_name: itemName, 
+            action_type: 'DELETE', 
+            amount: 0, 
+            balance_after: 0, 
+            report_date: new Date().toISOString().split('T')[0], 
+            user_name: 'Admin', 
+            branch: '-', 
+            note: 'นำของชำร่วยออกจากระบบ (Archived)', 
+            activity_name: '-', 
+            activity_location: '-', 
+            activity_date: null, 
             cost_per_unit: item.cost_per_unit || 0
         });
         await db.from('items').update({ is_active: false }).eq('id', id);
-        showToast(`ลบ "${itemName}" สำเร็จ`, 'success'); loadItems();
+        showToast(`ลบ "${itemName}" สำเร็จ`, 'success'); 
+        loadItems();
     });
 };
 
-// ==========================================
-// 8. LOGS & HISTORY (Updated with Name Filter & Cost Columns)
+/// ==========================================
+// 8. LOGS & HISTORY (Updated Logic)
 // ==========================================
 async function loadLogs() {
     const tbody = document.getElementById('log-table-body');
     if (!tbody) return; 
-    tbody.innerHTML = '<tr><td colspan="12" class="p-10 text-center text-gray-400 animate-pulse font-bold">กำลังดึงข้อมูลประวัติ...</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="13" class="p-10 text-center text-gray-400 animate-pulse font-bold">กำลังดึงข้อมูลประวัติ...</td></tr>';
     
-    // Filters
     const month = document.getElementById('filter-month')?.value;
     const branch = document.getElementById('filter-branch')?.value;
-    const itemName = document.getElementById('filter-item-name')?.value; // ฟิลเตอร์ใหม่
+    const itemName = document.getElementById('filter-item-name')?.value; 
+    
+    // ตั้งค่า Query พื้นฐาน
+    let query = db.from('logs');
+    
+    // 🔥 พยายามดึงแบบ JOIN (เอาชื่อสินค้าปัจจุบัน)
+    // ใช้ try-catch หรือเช็ค error เพื่อกันหน้าใบค้าง
+    let selectString = '*, items(name)'; 
+    
+    // ถ้ามีการกรอง
+    let dbQuery = query.select(selectString, { count: 'exact' });
 
-    let query = db.from('logs').select('*', { count: 'exact' });
-
-    if (month) { const year = new Date().getFullYear(); query = query.gte('report_date', `${year}-${month}-01`).lte('report_date', `${year}-${month}-31`); }
-    if (branch) query = query.ilike('branch', `%${branch}%`);
-    if (itemName) query = query.ilike('item_name', `%${itemName}%`); // ค้นหาชื่อ
+    if (month) { const year = new Date().getFullYear(); dbQuery = dbQuery.gte('report_date', `${year}-${month}-01`).lte('report_date', `${year}-${month}-31`); }
+    if (branch) dbQuery = dbQuery.ilike('branch', `%${branch}%`);
+    if (itemName) dbQuery = dbQuery.ilike('item_name', `%${itemName}%`);
 
     const from = currentPage * pageSize;
     const to = from + pageSize - 1;
-    const { data, error, count } = await query.order('created_at', { ascending: false }).range(from, to);
-    if (error) return console.error(error);
-    renderLogs(data); updatePaginationUI(count);
+    
+    // ดึงข้อมูล
+    let { data, error, count } = await dbQuery.order('created_at', { ascending: false }).range(from, to);
+    
+    // 🔥 FALLBACK: ถ้า Error (เช่น ลืมทำ Foreign Key) ให้ดึงแบบธรรมดาแทน
+    if (error) {
+        console.warn('Join failed (Relationship missing?), falling back to simple query.', error);
+        // รีเซ็ต Query ใหม่ เอาแค่ตาราง logs เพียวๆ
+        let fallbackQuery = db.from('logs').select('*', { count: 'exact' });
+        
+        if (month) { const year = new Date().getFullYear(); fallbackQuery = fallbackQuery.gte('report_date', `${year}-${month}-01`).lte('report_date', `${year}-${month}-31`); }
+        if (branch) fallbackQuery = fallbackQuery.ilike('branch', `%${branch}%`);
+        if (itemName) fallbackQuery = fallbackQuery.ilike('item_name', `%${itemName}%`);
+        
+        const fallbackResult = await fallbackQuery.order('created_at', { ascending: false }).range(from, to);
+        data = fallbackResult.data;
+        error = fallbackResult.error;
+        count = fallbackResult.count;
+    }
+
+    if (error) {
+        tbody.innerHTML = `<tr><td colspan="13" class="p-10 text-center text-red-500">เกิดข้อผิดพลาด: ${error.message}</td></tr>`;
+        return console.error(error);
+    }
+    
+    renderLogs(data); 
+    updatePaginationUI(count);
 }
 
 function renderLogs(logs) {
@@ -443,30 +519,30 @@ function renderLogs(logs) {
         const isW = log.action_type === 'WITHDRAW';
         const date = log.report_date ? new Date(log.report_date).toLocaleDateString('th-TH') : '-';
         const actDate = log.activity_date ? new Date(log.activity_date).toLocaleDateString('th-TH') : '-';
+        
+        // 🔥 Logic ชื่อสินค้า: 
+        // ถ้า items ไม่เป็น null (เจอสินค้าใน DB) ให้ใช้ log.items.name (ชื่อปัจจุบัน)
+        // ถ้าเป็น null (สินค้าโดนลบถาวรไปแล้ว) ให้ใช้ log.item_name (ชื่อเก่าที่บันทึกไว้)
+        const dynamicItemName = log.items ? log.items.name : log.item_name;
 
         // Badges
-        let typeBadge = '';
-        let amountClass = '';
-        let amountPrefix = '';
-
+        let typeBadge = ''; let amountClass = ''; let amountPrefix = '';
         switch(log.action_type) {
             case 'WITHDRAW': typeBadge = `<span class="bg-red-100 text-red-700 px-2 py-1 rounded-md text-xs font-bold border border-red-200"><i class="fa-solid fa-minus"></i> เบิกออก</span>`; amountClass = 'text-red-600'; amountPrefix = '-'; break;
             case 'RESTOCK': typeBadge = `<span class="bg-green-100 text-green-700 px-2 py-1 rounded-md text-xs font-bold border border-green-200"><i class="fa-solid fa-plus"></i> เติมสต็อก</span>`; amountClass = 'text-green-600'; amountPrefix = '+'; break;
             case 'ADD_NEW': typeBadge = `<span class="bg-blue-100 text-blue-700 px-2 py-1 rounded-md text-xs font-bold border border-blue-200"><i class="fa-solid fa-star"></i> เพิ่มของใหม่</span>`; amountClass = 'text-blue-600'; amountPrefix = '+'; break;
-            case 'DELETE': typeBadge = `<span class="bg-gray-100 text-gray-600 px-2 py-1 rounded-md text-xs font-bold border border-gray-200"><i class="fa-solid fa-trash"></i> ลบของชำร่วย</span>`; amountClass = 'text-gray-400'; amountPrefix = ''; break;
+            case 'DELETE': typeBadge = `<span class="bg-gray-100 text-gray-600 px-2 py-1 rounded-md text-xs font-bold border border-gray-200"><i class="fa-solid fa-trash"></i> ลบสินค้า</span>`; amountClass = 'text-gray-400'; amountPrefix = ''; break;
             default: typeBadge = `<span class="bg-gray-100 text-gray-500 px-2 py-1 rounded text-xs">ทั่วไป</span>`;
         }
 
         const branchDisplay = isW ? log.branch : '<span class="text-gray-300">-</span>';
-        
-        // Cost Calculation
         const unitCost = log.cost_per_unit || 0;
         const totalValue = unitCost * log.amount;
 
         tbody.innerHTML += `
             <tr class="border-b hover:bg-gray-50 text-xs md:text-sm">
                 <td class="p-3 text-gray-500 whitespace-nowrap">${date}</td>
-                <td class="p-3 font-semibold text-gray-700">${log.item_name}</td>
+                <td class="p-3 font-semibold text-gray-700">${dynamicItemName}</td>
                 <td class="p-3 text-center whitespace-nowrap">${typeBadge}</td>
                 <td class="p-3">${isW ? log.user_name : 'Admin'}</td>
                 <td class="p-3 text-gray-600">${branchDisplay}</td> 
@@ -490,11 +566,15 @@ function updatePaginationUI(totalCount) {
     const nextBtn = document.getElementById('next-btn');
     const pageInput = document.getElementById('page-input');      
     const totalDisplay = document.getElementById('total-pages-display'); 
+    
     if (!info) return;
+    
     currentTotalPages = Math.ceil(totalCount / pageSize) || 1; 
     info.innerText = `รายการที่ ${currentPage * pageSize + 1} - ${Math.min((currentPage + 1) * pageSize, totalCount)} จากทั้งหมด ${totalCount}`;
+    
     if(pageInput) { pageInput.value = currentPage + 1; pageInput.max = currentTotalPages; }
     if(totalDisplay) totalDisplay.innerText = currentTotalPages; 
+    
     prevBtn.disabled = currentPage === 0;
     nextBtn.disabled = (currentPage + 1) >= currentTotalPages;
 }
@@ -523,7 +603,10 @@ window.exportLogsToCSV = async () => {
     const itemName = document.getElementById('filter-item-name')?.value; 
 
     showToast('กำลังประมวลผลข้อมูล...', 'info');
-    let query = db.from('logs').select('*');
+    
+    // 🔥 JOIN items เพื่อให้ Export ได้ชื่อปัจจุบันด้วย
+    let query = db.from('logs').select('*, items(name)');
+    
     if (month) { const year = new Date().getFullYear(); query = query.gte('report_date', `${year}-${month}-01`).lte('report_date', `${year}-${month}-31`); }
     if (branch) query = query.ilike('branch', `%${branch}%`);
     if (itemName) query = query.ilike('item_name', `%${itemName}%`);
@@ -531,13 +614,15 @@ window.exportLogsToCSV = async () => {
     const { data, error } = await query.order('created_at', { ascending: false }).limit(100000);
     if (error || !data || data.length === 0) return showToast('ไม่พบข้อมูล', 'warning');
 
-    // 🔥 1. แก้หัวตาราง CSV (เรียงใหม่)
     let csvContent = "\uFEFFวันที่ทำรายการ,รายการสินค้า,ประเภทรายการ,ผู้ทำรายการ,สาขา,ชื่อกิจกรรม,สถานที่,วันที่จัดกิจกรรม,หมายเหตุ,จำนวน,ยอดคงเหลือ,ต้นทุนต่อชิ้น,มูลค่ารวม\n";
     
     data.forEach(log => {
         const date = log.report_date ? new Date(log.report_date).toLocaleDateString('th-TH') : '-';
         const isW = log.action_type === 'WITHDRAW';
         const user = isW ? log.user_name : 'Admin';
+        
+        // 🔥 Logic ชื่อสินค้า
+        const dynamicItemName = log.items ? log.items.name : log.item_name;
         
         let typeThai = 'ทั่วไป';
         if (log.action_type === 'WITHDRAW') typeThai = 'เบิกออก';
@@ -553,12 +638,10 @@ window.exportLogsToCSV = async () => {
         const actLoc = (log.activity_location || '-').replace(/,/g, ' ');
         const actDate = log.activity_date ? new Date(log.activity_date).toLocaleDateString('th-TH') : '-';
         
-        // Cost
         const unitCost = log.cost_per_unit || 0;
         const totalValue = unitCost * log.amount;
 
-        // 🔥 2. แก้ลำดับข้อมูลในแถว (เรียงใหม่)
-        csvContent += `"${date}","${log.item_name}","${typeThai}","${user}","${branchCol}","${actName}","${actLoc}","${actDate}","${note}","${amount}","${balance}","${unitCost}","${totalValue}"\n`;
+        csvContent += `"${date}","${dynamicItemName}","${typeThai}","${user}","${branchCol}","${actName}","${actLoc}","${actDate}","${note}","${amount}","${balance}","${unitCost}","${totalValue}"\n`;
     });
 
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
@@ -572,7 +655,9 @@ window.exportLogsToCSV = async () => {
     showToast(`ดาวน์โหลดเรียบร้อย (${data.length} รายการ)`, 'success');
 };
 
-// Render Storage (Dashboard)
+// ==========================================
+// 8. STORAGE DASHBOARD
+// ==========================================
 function renderStorage(items) {
     const grid = document.getElementById('storage-grid');
     if (!grid) return;
@@ -598,18 +683,9 @@ function renderStorage(items) {
                         <p class="text-xs text-gray-400 mt-1 line-clamp-1">${item.description || '-'}</p>
                     </div>
                     <div class="mt-3 pt-2 border-t border-gray-100 grid grid-cols-3 gap-1">
-                         <div class="text-center">
-                            <div class="text-[9px] text-blue-400 uppercase font-bold">รับเข้า</div>
-                            <div class="text-sm font-bold text-blue-600">${totalIn}</div>
-                        </div>
-                         <div class="text-center">
-                            <div class="text-[9px] text-red-400 uppercase font-bold">ใช้ไป</div>
-                            <div class="text-sm font-bold text-red-600">${used}</div>
-                        </div>
-                         <div class="text-center">
-                            <div class="text-[9px] text-green-400 uppercase font-bold">คงเหลือ</div>
-                            <div class="text-sm font-bold text-green-600">${balance}</div>
-                        </div>
+                         <div class="text-center"><div class="text-[9px] text-blue-400 uppercase font-bold">รับเข้า</div><div class="text-sm font-bold text-blue-600">${totalIn}</div></div>
+                         <div class="text-center"><div class="text-[9px] text-red-400 uppercase font-bold">ใช้ไป</div><div class="text-sm font-bold text-red-600">${used}</div></div>
+                         <div class="text-center"><div class="text-[9px] text-green-400 uppercase font-bold">คงเหลือ</div><div class="text-sm font-bold text-green-600">${balance}</div></div>
                     </div>
                 </div>
             </div>`;
