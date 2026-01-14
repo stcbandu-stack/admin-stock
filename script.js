@@ -416,25 +416,59 @@ function renderLogs(logs) {
     const tbody = document.getElementById('log-table-body');
     if (!tbody) return;
     tbody.innerHTML = '';
+    
     logs.forEach(log => {
         const isW = log.action_type === 'WITHDRAW';
         const date = log.report_date ? new Date(log.report_date).toLocaleDateString('th-TH') : '-';
         const actDate = log.activity_date ? new Date(log.activity_date).toLocaleDateString('th-TH') : '-';
-        let actionLabel = '', amountClass = '', amountPrefix = '';
+
+        // 1. สร้าง Badge สีสวยๆ ตามประเภทรายการ
+        let typeBadge = '';
+        let amountClass = '';
+        let amountPrefix = '';
+
         switch(log.action_type) {
-            case 'WITHDRAW': actionLabel = `<span class="text-gray-500 text-xs">${log.branch}</span>`; amountClass = 'text-red-600'; amountPrefix = '-'; break;
-            case 'RESTOCK': actionLabel = '<span class="text-green-600 text-xs font-bold"><i class="fa-solid fa-plus-circle"></i> เติมสต็อก</span>'; amountClass = 'text-green-600'; amountPrefix = '+'; break;
-            case 'ADD_NEW': actionLabel = '<span class="text-blue-600 text-xs font-bold"><i class="fa-solid fa-star"></i> เพิ่มของใหม่</span>'; amountClass = 'text-blue-600'; amountPrefix = '+'; break;
-            case 'DELETE': actionLabel = '<span class="text-red-500 text-xs font-bold"><i class="fa-solid fa-trash"></i> ลบสินค้า</span>'; amountClass = 'text-gray-400'; amountPrefix = ''; break;
-            default: actionLabel = '-';
+            case 'WITHDRAW':
+                // สีแดง สำหรับการเบิก
+                typeBadge = `<span class="bg-red-100 text-red-700 px-2 py-1 rounded-md text-xs font-bold border border-red-200"><i class="fa-solid fa-minus"></i> เบิกออก</span>`;
+                amountClass = 'text-red-600';
+                amountPrefix = '-';
+                break;
+            case 'RESTOCK':
+                // สีเขียว สำหรับการเติม
+                typeBadge = `<span class="bg-green-100 text-green-700 px-2 py-1 rounded-md text-xs font-bold border border-green-200"><i class="fa-solid fa-plus"></i> เติมสต็อก</span>`;
+                amountClass = 'text-green-600';
+                amountPrefix = '+';
+                break;
+            case 'ADD_NEW':
+                // สีน้ำเงิน สำหรับของใหม่
+                typeBadge = `<span class="bg-blue-100 text-blue-700 px-2 py-1 rounded-md text-xs font-bold border border-blue-200"><i class="fa-solid fa-star"></i> เพิ่มของใหม่</span>`;
+                amountClass = 'text-blue-600';
+                amountPrefix = '+';
+                break;
+            case 'DELETE':
+                // สีเทา สำหรับการลบ
+                typeBadge = `<span class="bg-gray-100 text-gray-600 px-2 py-1 rounded-md text-xs font-bold border border-gray-200"><i class="fa-solid fa-trash"></i> ลบสินค้า</span>`;
+                amountClass = 'text-gray-400';
+                amountPrefix = ''; 
+                break;
+            default:
+                typeBadge = `<span class="bg-gray-100 text-gray-500 px-2 py-1 rounded text-xs">ทั่วไป</span>`;
         }
+
+        // 2. จัดการคอลัมน์สาขา (ถ้าไม่ใช่เบิก ให้ขีดละ - ไว้)
+        const branchDisplay = isW ? log.branch : '<span class="text-gray-300">-</span>';
+
+        // 3. Render HTML (เพิ่มคอลัมน์ typeBadge เข้าไป)
         tbody.innerHTML += `
             <tr class="border-b hover:bg-gray-50 text-xs md:text-sm">
                 <td class="p-3 text-gray-500 whitespace-nowrap">${date}</td>
-                <td class="p-3 font-semibold">${log.item_name}</td>
+                <td class="p-3 font-semibold text-gray-700">${log.item_name}</td>
+                
+                <td class="p-3 text-center whitespace-nowrap">${typeBadge}</td>
+                
                 <td class="p-3">${isW ? log.user_name : 'Admin'}</td>
-                <td class="p-3">${actionLabel}</td>
-                <td class="p-3">${isW ? (log.activity_name || '-') : '-'}</td>
+                <td class="p-3 text-gray-600">${branchDisplay}</td> <td class="p-3">${isW ? (log.activity_name || '-') : '-'}</td>
                 <td class="p-3 text-gray-500">${isW ? (log.activity_location || '-') : '-'}</td>
                 <td class="p-3 text-gray-500 whitespace-nowrap">${isW ? actDate : '-'}</td>
                 <td class="p-3 text-gray-400 italic">${log.note || '-'}</td>
@@ -486,24 +520,34 @@ window.exportLogsToCSV = async () => {
     if (branch) query = query.ilike('branch', `%${branch}%`);
     const { data, error } = await query.order('created_at', { ascending: false }).limit(100000);
     if (error || !data || data.length === 0) return showToast('ไม่พบข้อมูล', 'warning');
-    let csvContent = "\uFEFFวันที่ทำรายการ,รายการสินค้า,ผู้เบิก,สถานะ/สาขา,ชื่อกิจกรรม,สถานที่,วันที่จัดกิจกรรม,หมายเหตุ,จำนวน,ยอดคงเหลือ\n";
+
+    // 🔥 เพิ่มหัวตาราง "ประเภทรายการ" ใน CSV
+    let csvContent = "\uFEFFวันที่ทำรายการ,รายการสินค้า,ประเภทรายการ,ผู้ทำรายการ,สาขา,ชื่อกิจกรรม,สถานที่,วันที่จัดกิจกรรม,หมายเหตุ,จำนวน,ยอดคงเหลือ\n";
+    
     data.forEach(log => {
         const date = log.report_date ? new Date(log.report_date).toLocaleDateString('th-TH') : '-';
         const isW = log.action_type === 'WITHDRAW';
         const user = isW ? log.user_name : 'Admin';
-        let branchCol = '-';
-        if (log.action_type === 'WITHDRAW') branchCol = log.branch;
-        else if (log.action_type === 'RESTOCK') branchCol = 'เติมสต็อก';
-        else if (log.action_type === 'ADD_NEW') branchCol = 'เพิ่มของใหม่';
-        else if (log.action_type === 'DELETE') branchCol = 'ลบสินค้า';
+        
+        // แปลง action_type เป็นภาษาไทยสำหรับ CSV
+        let typeThai = 'ทั่วไป';
+        if (log.action_type === 'WITHDRAW') typeThai = 'เบิกออก';
+        else if (log.action_type === 'RESTOCK') typeThai = 'เติมสต็อก';
+        else if (log.action_type === 'ADD_NEW') typeThai = 'เพิ่มของใหม่';
+        else if (log.action_type === 'DELETE') typeThai = 'ลบสินค้า';
+
+        const branchCol = isW ? log.branch : '-';
         const amount = (isW ? '-' : '+') + log.amount;
         const note = (log.note || '-').replace(/,/g, ' '); 
         const balance = log.balance_after ?? '-';
         const actName = (log.activity_name || '-').replace(/,/g, ' ');
         const actLoc = (log.activity_location || '-').replace(/,/g, ' ');
         const actDate = log.activity_date ? new Date(log.activity_date).toLocaleDateString('th-TH') : '-';
-        csvContent += `"${date}","${log.item_name}","${user}","${branchCol}","${actName}","${actLoc}","${actDate}","${note}","${amount}","${balance}"\n`;
+        
+        // 🔥 เพิ่ม typeThai ลงในแถว
+        csvContent += `"${date}","${log.item_name}","${typeThai}","${user}","${branchCol}","${actName}","${actLoc}","${actDate}","${note}","${amount}","${balance}"\n`;
     });
+
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
