@@ -106,7 +106,7 @@ async function loadItems(mode = 'normal') {
     allItems = data;
 
     if (mode === 'storage') { renderStorage(data); } 
-    else { renderItems(data); const lowStock = data.filter(i => i.quantity > 0 && i.quantity <= 5); if (lowStock.length > 0) showToast(`มีของใกล้หมด ${lowStock.length} รายการ`, 'warning'); }
+    else { renderItems(data); }
 }
 
 window.filterItems = () => {
