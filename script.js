@@ -603,17 +603,35 @@ window.exportLogsToCSV = async () => {
     const itemName = document.getElementById('filter-item-name')?.value; 
 
     showToast('กำลังประมวลผลข้อมูล...', 'info');
-    
-    // 🔥 JOIN items เพื่อให้ Export ได้ชื่อปัจจุบันด้วย
+
+    // สร้างฟังก์ชันช่วยกรอง (จะได้ไม่ต้องเขียนซ้ำ 2 รอบ)
+    const applyFilters = (baseQuery) => {
+        if (month) { 
+            const year = new Date().getFullYear(); 
+            baseQuery = baseQuery.gte('report_date', `${year}-${month}-01`).lte('report_date', `${year}-${month}-31`); 
+        }
+        if (branch) baseQuery = baseQuery.ilike('branch', `%${branch}%`);
+        if (itemName) baseQuery = baseQuery.ilike('item_name', `%${itemName}%`);
+        return baseQuery.order('created_at', { ascending: false }).limit(100000);
+    };
+
+    // 🔥 1. ลองดึงแบบ JOIN (พยายามเอาชื่อปัจจุบันมาด้วย)
     let query = db.from('logs').select('*, items(name)');
-    
-    if (month) { const year = new Date().getFullYear(); query = query.gte('report_date', `${year}-${month}-01`).lte('report_date', `${year}-${month}-31`); }
-    if (branch) query = query.ilike('branch', `%${branch}%`);
-    if (itemName) query = query.ilike('item_name', `%${itemName}%`);
+    let { data, error } = await applyFilters(query);
 
-    const { data, error } = await query.order('created_at', { ascending: false }).limit(100000);
-    if (error || !data || data.length === 0) return showToast('ไม่พบข้อมูล', 'warning');
+    // 🔥 2. FALLBACK: ถ้า Error (Database เชื่อมไม่ติด) ให้ดึงแบบธรรมดา (Safety Net)
+    if (error) {
+        console.warn('Export Join failed (Relation missing?), using fallback.', error);
+        // ดึงแค่ตาราง logs เพียวๆ พอ
+        let fallbackQuery = db.from('logs').select('*');
+        const res = await applyFilters(fallbackQuery);
+        data = res.data;
+        error = res.error;
+    }
 
+    if (error || !data || data.length === 0) return showToast('ไม่พบข้อมูลที่จะ Export', 'warning');
+
+    // 3. สร้าง CSV
     let csvContent = "\uFEFFวันที่ทำรายการ,รายการสินค้า,ประเภทรายการ,ผู้ทำรายการ,สาขา,ชื่อกิจกรรม,สถานที่,วันที่จัดกิจกรรม,หมายเหตุ,จำนวน,ยอดคงเหลือ,ต้นทุนต่อชิ้น,มูลค่ารวม\n";
     
     data.forEach(log => {
@@ -621,7 +639,7 @@ window.exportLogsToCSV = async () => {
         const isW = log.action_type === 'WITHDRAW';
         const user = isW ? log.user_name : 'Admin';
         
-        // 🔥 Logic ชื่อสินค้า
+        // 🔥 Logic ชื่อสินค้า: ถ้ามี items.name ให้ใช้ ถ้าไม่มีให้ใช้ item_name เดิม
         const dynamicItemName = log.items ? log.items.name : log.item_name;
         
         let typeThai = 'ทั่วไป';
@@ -644,6 +662,7 @@ window.exportLogsToCSV = async () => {
         csvContent += `"${date}","${dynamicItemName}","${typeThai}","${user}","${branchCol}","${actName}","${actLoc}","${actDate}","${note}","${amount}","${balance}","${unitCost}","${totalValue}"\n`;
     });
 
+    // 4. สั่งดาวน์โหลด
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
