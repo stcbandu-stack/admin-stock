@@ -2,8 +2,8 @@
 <html lang="th">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Interactive Paper: Car Plan (with Save)</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Interactive Paper: Car Plan (Auto Scale)</title>
     
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -29,61 +29,69 @@
             linear-gradient(90deg, #e5e7eb 1px, transparent 1px);
             background-size: 1cm 1cm;
             box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
+            /* เปลี่ยนจุดหมุนเป็นมุมซ้ายบน หรือตรงกลาง เพื่อให้ Scale ง่าย */
+            transform-origin: center center;
         }
 
         /* Interaction Styles */
         .draggable-item:hover .rotate-handle { opacity: 1; }
         .rotate-handle { opacity: 0; transition: opacity 0.2s; }
         .draggable-item.rotating .rotate-handle { opacity: 1; }
+        /* Show handle on touch devices/mobile always or when active to help */
+        @media (hover: none) {
+            .rotate-handle { opacity: 1; } 
+        }
 
         /* Loading Overlay */
         #loader {
-            background: rgba(255, 255, 255, 0.8);
+            background: rgba(255, 255, 255, 0.9);
             backdrop-filter: blur(4px);
         }
     </style>
 </head>
-<body class="bg-slate-100 h-screen w-full overflow-hidden flex flex-col font-sans">
+<body class="bg-slate-800 h-screen w-full overflow-hidden flex flex-col font-sans">
 
     <!-- Header -->
-    <div class="bg-white p-3 shadow-sm z-20 flex justify-between items-center shrink-0 border-b relative">
-        <div class="flex items-center gap-4">
+    <div class="bg-white p-2 shadow-sm z-20 flex justify-between items-center shrink-0 border-b relative h-14">
+        <div class="flex items-center gap-2 sm:gap-4">
             <div>
-                <h1 class="text-lg font-bold text-slate-800">Layout Planner</h1>
-                <p class="text-xs text-slate-500">Supabase Connected</p>
+                <h1 class="text-sm sm:text-lg font-bold text-slate-800">เลย์เอาท์งานพ่อขุน</h1>
+                <p class="text-[10px] text-slate-500 hidden sm:block">สเกล 1:100</p>
             </div>
             
             <!-- Save Button -->
-            <button onclick="saveLayout()" id="save-btn" class="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded shadow transition-all active:scale-95">
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
-                <span id="save-text">บันทึกตำแหน่ง</span>
+            <button onclick="saveLayout()" id="save-btn" class="flex items-center gap-1 sm:gap-2 bg-green-600 hover:bg-green-700 text-white px-3 py-1.5 rounded shadow transition-all active:scale-95 text-xs sm:text-sm">
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+                <span id="save-text">บันทึก</span>
             </button>
         </div>
 
-        <div class="text-xs text-slate-600 bg-slate-50 px-3 py-1 rounded border hidden sm:block">
-            <b>วิธีใช้:</b> คลิกตัวรถเพื่อ <span class="text-blue-600">ลาก</span> | คลิกจุดแดงเพื่อ <span class="text-red-600">หมุน</span>
+        <div class="text-[10px] sm:text-xs text-slate-600 bg-slate-50 px-2 py-1 rounded border">
+            <b>วิธีใช้:</b> ลาก = ย้าย | จุดแดง = หมุน
         </div>
     </div>
 
-    <!-- Workspace -->
-    <div class="flex-1 overflow-auto flex justify-center p-8 cursor-grab bg-slate-200 relative" id="workspace">
+    <!-- Workspace (No Scroll, Centered) -->
+    <div class="flex-1 overflow-hidden flex items-center justify-center bg-slate-200 relative w-full h-full" id="workspace">
         
-        <!-- The Paper -->
-        <div id="paper" class="paper-size paper-bg relative bg-white mx-auto border border-slate-300 shadow-xl transition-all">
-            
-            <!-- Layout Boundary (12x24cm) Centered/Top -->
-            <div class="absolute border-2 border-black pointer-events-none z-0" 
-                 style="width: 12cm; height: 24cm; left: 50%; transform: translateX(-50%); top: 1.5cm;">
-                 <span class="absolute -top-6 left-0 text-xs text-slate-400">Layout Area (12x24cm)</span>
-            </div>
+        <!-- The Paper Wrapper (For Scale) -->
+        <div id="paper-container" class="flex items-center justify-center">
+            <div id="paper" class="paper-size paper-bg relative bg-white border border-slate-300 shadow-xl">
+                
+                <!-- Layout Boundary (12x24cm) Centered/Top -->
+                <div class="absolute border-2 border-black pointer-events-none z-0" 
+                     style="width: 12cm; height: 24cm; left: 50%; transform: translateX(-50%); top: 1.5cm;">
+                     <span class="absolute -top-8 left-0 text-xs text-slate-400 whitespace-nowrap">Layout Area (12x24cm)</span>
+                </div>
 
-            <!-- Items will be injected here by JavaScript -->
+                <!-- Items will be injected here by JavaScript -->
+            </div>
         </div>
 
         <!-- Loader -->
         <div id="loader" class="absolute inset-0 z-50 flex items-center justify-center flex-col">
             <div class="animate-spin rounded-full h-10 w-10 border-b-2 border-slate-800 mb-3"></div>
-            <span class="text-slate-600 font-medium">กำลังโหลดข้อมูล...</span>
+            <span class="text-slate-600 font-medium text-sm">กำลังโหลดข้อมูล...</span>
         </div>
     </div>
 
@@ -92,10 +100,10 @@
         const SUPABASE_URL = 'https://dcigpisivgpofeljvoph.supabase.co';
         const SUPABASE_KEY = 'sb_publishable_ccUnFtL3x-8eV8exjy4oIw__JiDK4VK'; 
         
-        // FIX: Changed variable name from 'supabase' to 'supabaseClient' to avoid conflict with the CDN global variable
         const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
         const paper = document.getElementById('paper');
+        const workspace = document.getElementById('workspace');
         const loader = document.getElementById('loader');
 
         // Config Definitions
@@ -105,19 +113,57 @@
             'frr':    { label: 'FRR',     w: '2.2cm', h: '6cm', color: 'bg-amber-300', textCol: 'text-slate-900' }
         };
 
-        // Default Data (Used if DB is empty)
         const defaultFleetConfig = [
             { type: 'pickup', count: 9 },
             { type: 'mux',    count: 2 },
             { type: 'frr',    count: 1 }
         ];
 
+        // --- SCALE MANAGEMENT ---
+        let currentScale = 1;
+
+        function fitPaperToScreen() {
+            const margin = 20; // px
+            // Get available size
+            const availableWidth = workspace.clientWidth - (margin * 2);
+            const availableHeight = workspace.clientHeight - (margin * 2);
+
+            // Paper base size (approx pixels at 96dpi: 1cm = 37.8px)
+            // But we can just use offsetWidth since CSS sets it in cm
+            // Reset transform first to get natural size
+            paper.style.transform = 'none';
+            const paperWidth = paper.offsetWidth;
+            const paperHeight = paper.offsetHeight;
+
+            // Calculate scale
+            const scaleX = availableWidth / paperWidth;
+            const scaleY = availableHeight / paperHeight;
+            
+            // Use the smaller scale to fit entire paper
+            currentScale = Math.min(scaleX, scaleY, 1.0); // Never zoom in more than 100% if screen is huge (optional, remove 1.0 if you want zoom in)
+            
+            // If on mobile (small screen), we might want to allow scaling up > 1 if the screen is tiny? 
+            // Actually requirement is "force see entire page". So Math.min(..., ...) is correct.
+            // If screen is very large, maybe we cap at 1.2 or something. Let's stick to fitting.
+            // But if the screen is HUGE, let's max at 1.5 to not look silly.
+            if (availableWidth > paperWidth && availableHeight > paperHeight) {
+                // optional cap
+            } else {
+                 // scale down
+            }
+
+            paper.style.transform = `scale(${currentScale})`;
+        }
+
+        window.addEventListener('resize', fitPaperToScreen);
+
         // --- 2. Save & Load Logic ---
 
-        // Load Function
         async function initApp() {
+            // Setup scale first
+            fitPaperToScreen();
+
             try {
-                // Fetch data from table 'layouts', row ID 1
                 const { data, error } = await supabaseClient
                     .from('layouts')
                     .select('elements')
@@ -129,31 +175,28 @@
                     alert('ไม่สามารถโหลดข้อมูลได้ ใช้ค่าเริ่มต้นแทน');
                     initDefaultFleet();
                 } else if (data && data.elements && data.elements.length > 0) {
-                    console.log('Loaded saved layout:', data.elements);
                     renderSavedFleet(data.elements);
                 } else {
-                    console.log('No saved data found, using default.');
                     initDefaultFleet();
                 }
             } catch (err) {
                 console.error('Connection Error:', err);
                 initDefaultFleet();
             } finally {
-                loader.classList.add('hidden'); // Hide loader
+                loader.classList.add('hidden');
+                // Re-fit after content load just in case
+                setTimeout(fitPaperToScreen, 100);
             }
         }
 
-        // Save Function
         async function saveLayout() {
             const btn = document.getElementById('save-btn');
             const txt = document.getElementById('save-text');
             const originalText = txt.innerText;
             
-            // UI Loading state
             btn.classList.add('opacity-75', 'cursor-not-allowed');
-            txt.innerText = 'กำลังบันทึก...';
+            txt.innerText = '...';
             
-            // Gather Data
             const items = document.querySelectorAll('.draggable-item');
             const elementsData = Array.from(items).map(el => ({
                 type: el.dataset.type,
@@ -163,15 +206,13 @@
             }));
 
             try {
-                // Upsert to ID 1
                 const { error } = await supabaseClient
                     .from('layouts')
                     .upsert({ id: 1, elements: elementsData });
 
                 if (error) throw error;
 
-                // Success Feedback
-                txt.innerText = 'เรียบร้อย!';
+                txt.innerText = 'OK';
                 btn.classList.replace('bg-green-600', 'bg-blue-600');
                 setTimeout(() => {
                     txt.innerText = originalText;
@@ -181,7 +222,7 @@
 
             } catch (err) {
                 console.error(err);
-                alert('บันทึกไม่สำเร็จ: ' + err.message);
+                alert('Error: ' + err.message);
                 txt.innerText = originalText;
                 btn.classList.remove('opacity-75', 'cursor-not-allowed');
             }
@@ -190,10 +231,8 @@
         // --- 3. Rendering Logic ---
 
         function renderSavedFleet(savedData) {
-            // Clear existing items (except layout boundary)
             const existing = paper.querySelectorAll('.draggable-item');
             existing.forEach(e => e.remove());
-
             savedData.forEach(item => {
                 createCar(item.type, item.left, item.top, item.rotation);
             });
@@ -207,9 +246,7 @@
 
             defaultFleetConfig.forEach(conf => {
                 for (let i = 0; i < conf.count; i++) {
-                    // Create with default positions in cm
                     createCar(conf.type, `${startX}cm`, `${startY}cm`, 0);
-                    
                     startX += gapX;
                     if (startX > 13) {
                         startX = 0.5;
@@ -231,14 +268,13 @@
             el.style.height = config.h;
             el.style.transform = `rotate(${rotation}deg)`;
             
-            // Store state in dataset
             el.dataset.rotation = rotation;
             el.dataset.type = type;
             
             el.innerHTML = `
-                <div class="rotate-handle w-6 h-6 absolute -top-8 left-1/2 -translate-x-1/2 flex items-center justify-center cursor-alias z-50">
-                     <div class="w-3 h-3 bg-red-500 rounded-full border-2 border-white shadow hover:scale-125 transition-transform"></div>
-                     <div class="w-[1px] h-3 bg-red-300 absolute -bottom-3"></div>
+                <div class="rotate-handle w-8 h-8 absolute -top-10 left-1/2 -translate-x-1/2 flex items-center justify-center cursor-alias z-50">
+                     <div class="w-4 h-4 bg-red-500 rounded-full border-2 border-white shadow hover:scale-125 transition-transform"></div>
+                     <div class="w-[1px] h-4 bg-red-300 absolute -bottom-4"></div>
                 </div>
                 <div class="w-full h-full ${config.color} shadow-sm border border-black/20 hover:border-black/50 transition-colors flex items-center justify-center rounded-sm overflow-hidden">
                     <span class="text-[10px] font-bold ${config.textCol} text-center rotate-90 leading-tight block transform origin-center whitespace-nowrap">
@@ -255,7 +291,7 @@
             paper.appendChild(el);
         }
 
-        // --- 4. Drag & Rotate Logic (Same as before) ---
+        // --- 4. Drag & Rotate Logic (Updated for Scaling) ---
         let activeItem = null;
         let isDragging = false;
         let isRotating = false;
@@ -275,24 +311,35 @@
             e.preventDefault();
             isDragging = true;
             bringToFront(activeItem);
+            
             const clientX = e.type.includes('mouse') ? e.clientX : e.touches[0].clientX;
             const clientY = e.type.includes('mouse') ? e.clientY : e.touches[0].clientY;
-            dragStartX = clientX; dragStartY = clientY;
-            initialLeft = activeItem.offsetLeft; initialTop = activeItem.offsetTop;
+            
+            dragStartX = clientX; 
+            dragStartY = clientY;
+            
+            initialLeft = activeItem.offsetLeft; 
+            initialTop = activeItem.offsetTop;
+
             document.addEventListener('mousemove', onDrag);
             document.addEventListener('mouseup', stopDrag);
             document.addEventListener('touchmove', onDrag, { passive: false });
             document.addEventListener('touchend', stopDrag);
+            
             activeItem.classList.add('opacity-80');
         }
 
         function onDrag(e) {
             if (!isDragging || !activeItem) return;
             e.preventDefault();
+
             const clientX = e.type.includes('mouse') ? e.clientX : e.touches[0].clientX;
             const clientY = e.type.includes('mouse') ? e.clientY : e.touches[0].clientY;
-            const dx = clientX - dragStartX;
-            const dy = clientY - dragStartY;
+
+            // FIX: Divide delta by scale to keep movement 1:1 with finger
+            const dx = (clientX - dragStartX) / currentScale;
+            const dy = (clientY - dragStartY) / currentScale;
+
             activeItem.style.left = `${initialLeft + dx}px`;
             activeItem.style.top = `${initialTop + dy}px`;
         }
@@ -309,13 +356,17 @@
             isRotating = true;
             activeItem.classList.add('rotating');
             bringToFront(activeItem);
+
             const clientX = e.type.includes('mouse') ? e.clientX : e.touches[0].touches[0].clientX;
             const clientY = e.type.includes('mouse') ? e.clientY : e.touches[0].touches[0].clientY;
+
             const rect = activeItem.getBoundingClientRect();
             const centerX = rect.left + rect.width / 2;
             const centerY = rect.top + rect.height / 2;
+
             initialRotation = parseFloat(activeItem.dataset.rotation) || 0;
             rotateStartAngle = Math.atan2(clientY - centerY, clientX - centerX);
+
             document.addEventListener('mousemove', onRotate);
             document.addEventListener('mouseup', stopRotate);
             document.addEventListener('touchmove', onRotate, { passive: false });
@@ -325,17 +376,22 @@
         function onRotate(e) {
             if (!isRotating || !activeItem) return;
             e.preventDefault();
+
             const clientX = e.type.includes('mouse') ? e.clientX : e.touches[0].clientX;
             const clientY = e.type.includes('mouse') ? e.clientY : e.touches[0].clientY;
+
             const rect = activeItem.getBoundingClientRect();
             const centerX = rect.left + rect.width / 2;
             const centerY = rect.top + rect.height / 2;
+
             const currentMouseAngle = Math.atan2(clientY - centerY, clientX - centerX);
             const delta = currentMouseAngle - rotateStartAngle;
             const deltaDeg = delta * (180 / Math.PI);
+            
             let newRotation = initialRotation + deltaDeg;
             activeItem.style.transform = `rotate(${newRotation}deg)`;
             activeItem.dataset.rotation = newRotation;
+            
             const display = activeItem.querySelector('.angle-display');
             if(display) display.textContent = `${Math.round(newRotation % 360)}°`;
         }
