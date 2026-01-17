@@ -3,8 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Interactive Paper: Car Plan</title>
+    <title>Interactive Paper: Car Plan (with Save)</title>
+    
+    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Supabase JS Client -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
     <style>
         /* กำหนดขนาดหน่วย cm */
         .paper-size { width: 15cm; height: 30cm; }
@@ -21,183 +27,272 @@
             background-color: white;
             background-image: linear-gradient(#e5e7eb 1px, transparent 1px),
             linear-gradient(90deg, #e5e7eb 1px, transparent 1px);
-            background-size: 1cm 1cm; /* ปรับ Grid เป็น 1cm เพื่อกะระยะง่ายขึ้น */
+            background-size: 1cm 1cm;
             box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
         }
 
-        /* ซ่อน Handle หมุนถ้าไม่ได้ Hover (เพื่อให้ดูสะอาดตา) */
-        .draggable-item:hover .rotate-handle {
-            opacity: 1;
-        }
-        .rotate-handle {
-            opacity: 0;
-            transition: opacity 0.2s;
-        }
-        /* แต่ถ้ากำลังหมุนอยู่ ให้โชว์ค้างไว้ */
-        .draggable-item.rotating .rotate-handle {
-            opacity: 1;
-        }
+        /* Interaction Styles */
+        .draggable-item:hover .rotate-handle { opacity: 1; }
+        .rotate-handle { opacity: 0; transition: opacity 0.2s; }
+        .draggable-item.rotating .rotate-handle { opacity: 1; }
 
-        /* Center text in box */
-        .box-text {
-            writing-mode: vertical-rl; /* เขียนแนวตั้งเพื่อให้เข้ากับทรงรถ */
-            text-orientation: mixed;
+        /* Loading Overlay */
+        #loader {
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(4px);
         }
     </style>
 </head>
 <body class="bg-slate-100 h-screen w-full overflow-hidden flex flex-col font-sans">
 
     <!-- Header -->
-    <div class="bg-white p-3 shadow-sm z-20 flex justify-between items-center shrink-0 border-b">
-        <div>
-            <h1 class="text-lg font-bold text-slate-800">Layout Planner</h1>
-            <p class="text-xs text-slate-500">Total: 12 คัน (ลากและหมุนได้อิสระ)</p>
+    <div class="bg-white p-3 shadow-sm z-20 flex justify-between items-center shrink-0 border-b relative">
+        <div class="flex items-center gap-4">
+            <div>
+                <h1 class="text-lg font-bold text-slate-800">Layout Planner</h1>
+                <p class="text-xs text-slate-500">Supabase Connected</p>
+            </div>
+            
+            <!-- Save Button -->
+            <button onclick="saveLayout()" id="save-btn" class="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded shadow transition-all active:scale-95">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+                <span id="save-text">บันทึกตำแหน่ง</span>
+            </button>
         </div>
-        <div class="text-xs text-slate-600 bg-slate-50 px-3 py-1 rounded border">
+
+        <div class="text-xs text-slate-600 bg-slate-50 px-3 py-1 rounded border hidden sm:block">
             <b>วิธีใช้:</b> คลิกตัวรถเพื่อ <span class="text-blue-600">ลาก</span> | คลิกจุดแดงเพื่อ <span class="text-red-600">หมุน</span>
         </div>
     </div>
 
     <!-- Workspace -->
-    <div class="flex-1 overflow-auto flex justify-center p-8 cursor-grab bg-slate-200" id="workspace">
+    <div class="flex-1 overflow-auto flex justify-center p-8 cursor-grab bg-slate-200 relative" id="workspace">
         
         <!-- The Paper -->
-        <div id="paper" class="paper-size paper-bg relative bg-white mx-auto border border-slate-300 shadow-xl">
+        <div id="paper" class="paper-size paper-bg relative bg-white mx-auto border border-slate-300 shadow-xl transition-all">
+            
+            <!-- Layout Boundary (12x24cm) Centered/Top -->
+            <div class="absolute border-2 border-black pointer-events-none z-0" 
+                 style="width: 12cm; height: 24cm; left: 50%; transform: translateX(-50%); top: 1.5cm;">
+                 <span class="absolute -top-6 left-0 text-xs text-slate-400">Layout Area (12x24cm)</span>
+            </div>
+
             <!-- Items will be injected here by JavaScript -->
+        </div>
+
+        <!-- Loader -->
+        <div id="loader" class="absolute inset-0 z-50 flex items-center justify-center flex-col">
+            <div class="animate-spin rounded-full h-10 w-10 border-b-2 border-slate-800 mb-3"></div>
+            <span class="text-slate-600 font-medium">กำลังโหลดข้อมูล...</span>
         </div>
     </div>
 
     <script>
-        const paper = document.getElementById('paper');
+        // --- 1. Supabase Configuration ---
+        const SUPABASE_URL = 'https://dcigpisivgpofeljvoph.supabase.co';
+        const SUPABASE_KEY = 'sb_publishable_ccUnFtL3x-8eV8exjy4oIw__JiDK4VK'; 
+        
+        // FIX: Changed variable name from 'supabase' to 'supabaseClient' to avoid conflict with the CDN global variable
+        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-        // ข้อมูลรถแต่ละประเภท
-        const fleetConfig = [
-            { type: 'pickup', label: 'รถกระบะ', count: 9, w: '2cm', h: '5.7cm', color: 'bg-gray-400', textCol: 'text-white' },
-            { type: 'mux',    label: 'MU-X',    count: 2, w: '2cm', h: '5.2cm', color: 'bg-sky-300',  textCol: 'text-slate-800' },
-            { type: 'frr',    label: 'FRR',     count: 1, w: '2.2cm', h: '6cm', color: 'bg-amber-300', textCol: 'text-slate-900' }
+        const paper = document.getElementById('paper');
+        const loader = document.getElementById('loader');
+
+        // Config Definitions
+        const fleetTypes = {
+            'pickup': { label: 'รถกระบะ', w: '2cm', h: '5.7cm', color: 'bg-gray-400', textCol: 'text-white' },
+            'mux':    { label: 'MU-X',    w: '2cm', h: '5.2cm', color: 'bg-sky-300',  textCol: 'text-slate-800' },
+            'frr':    { label: 'FRR',     w: '2.2cm', h: '6cm', color: 'bg-amber-300', textCol: 'text-slate-900' }
+        };
+
+        // Default Data (Used if DB is empty)
+        const defaultFleetConfig = [
+            { type: 'pickup', count: 9 },
+            { type: 'mux',    count: 2 },
+            { type: 'frr',    count: 1 }
         ];
 
-        // ฟังก์ชันสร้างรถ
-        function initFleet() {
-            let startX = 1; // cm
-            let startY = 1; // cm
-            const gapX = 2.5; // cm spacing
-            const gapY = 6.5; // cm spacing
+        // --- 2. Save & Load Logic ---
 
-            fleetConfig.forEach(config => {
-                for (let i = 0; i < config.count; i++) {
-                    createCar(config, startX, startY);
+        // Load Function
+        async function initApp() {
+            try {
+                // Fetch data from table 'layouts', row ID 1
+                const { data, error } = await supabaseClient
+                    .from('layouts')
+                    .select('elements')
+                    .eq('id', 1)
+                    .single();
+
+                if (error && error.code !== 'PGRST116') {
+                    console.warn('Supabase Error:', error.message);
+                    alert('ไม่สามารถโหลดข้อมูลได้ ใช้ค่าเริ่มต้นแทน');
+                    initDefaultFleet();
+                } else if (data && data.elements && data.elements.length > 0) {
+                    console.log('Loaded saved layout:', data.elements);
+                    renderSavedFleet(data.elements);
+                } else {
+                    console.log('No saved data found, using default.');
+                    initDefaultFleet();
+                }
+            } catch (err) {
+                console.error('Connection Error:', err);
+                initDefaultFleet();
+            } finally {
+                loader.classList.add('hidden'); // Hide loader
+            }
+        }
+
+        // Save Function
+        async function saveLayout() {
+            const btn = document.getElementById('save-btn');
+            const txt = document.getElementById('save-text');
+            const originalText = txt.innerText;
+            
+            // UI Loading state
+            btn.classList.add('opacity-75', 'cursor-not-allowed');
+            txt.innerText = 'กำลังบันทึก...';
+            
+            // Gather Data
+            const items = document.querySelectorAll('.draggable-item');
+            const elementsData = Array.from(items).map(el => ({
+                type: el.dataset.type,
+                left: el.style.left,
+                top: el.style.top,
+                rotation: el.dataset.rotation
+            }));
+
+            try {
+                // Upsert to ID 1
+                const { error } = await supabaseClient
+                    .from('layouts')
+                    .upsert({ id: 1, elements: elementsData });
+
+                if (error) throw error;
+
+                // Success Feedback
+                txt.innerText = 'เรียบร้อย!';
+                btn.classList.replace('bg-green-600', 'bg-blue-600');
+                setTimeout(() => {
+                    txt.innerText = originalText;
+                    btn.classList.replace('bg-blue-600', 'bg-green-600');
+                    btn.classList.remove('opacity-75', 'cursor-not-allowed');
+                }, 1500);
+
+            } catch (err) {
+                console.error(err);
+                alert('บันทึกไม่สำเร็จ: ' + err.message);
+                txt.innerText = originalText;
+                btn.classList.remove('opacity-75', 'cursor-not-allowed');
+            }
+        }
+
+        // --- 3. Rendering Logic ---
+
+        function renderSavedFleet(savedData) {
+            // Clear existing items (except layout boundary)
+            const existing = paper.querySelectorAll('.draggable-item');
+            existing.forEach(e => e.remove());
+
+            savedData.forEach(item => {
+                createCar(item.type, item.left, item.top, item.rotation);
+            });
+        }
+
+        function initDefaultFleet() {
+            let startX = 0.5; 
+            let startY = 1.5;
+            const gapX = 2.5; 
+            const gapY = 6.5;
+
+            defaultFleetConfig.forEach(conf => {
+                for (let i = 0; i < conf.count; i++) {
+                    // Create with default positions in cm
+                    createCar(conf.type, `${startX}cm`, `${startY}cm`, 0);
                     
-                    // จัดเรียงตำแหน่งเริ่มต้นแบบ Grid ง่ายๆ
                     startX += gapX;
-                    if (startX > 12) { // ขึ้นบรรทัดใหม่ถ้าเกินขอบขวา
-                        startX = 1;
+                    if (startX > 13) {
+                        startX = 0.5;
                         startY += gapY;
                     }
                 }
             });
         }
 
-        function createCar(config, x, y) {
+        function createCar(type, left, top, rotation) {
+            const config = fleetTypes[type];
+            if (!config) return;
+
             const el = document.createElement('div');
             el.className = 'draggable-item absolute cursor-move group select-none touch-none';
-            el.style.left = `${x}cm`;
-            el.style.top = `${y}cm`;
+            el.style.left = left;
+            el.style.top = top;
             el.style.width = config.w;
             el.style.height = config.h;
-            el.dataset.rotation = 0;
+            el.style.transform = `rotate(${rotation}deg)`;
             
-            // HTML Structure: Rotate Handle + Car Body
+            // Store state in dataset
+            el.dataset.rotation = rotation;
+            el.dataset.type = type;
+            
             el.innerHTML = `
-                <!-- Rotate Handle -->
                 <div class="rotate-handle w-6 h-6 absolute -top-8 left-1/2 -translate-x-1/2 flex items-center justify-center cursor-alias z-50">
                      <div class="w-3 h-3 bg-red-500 rounded-full border-2 border-white shadow hover:scale-125 transition-transform"></div>
                      <div class="w-[1px] h-3 bg-red-300 absolute -bottom-3"></div>
                 </div>
-
-                <!-- Car Body -->
                 <div class="w-full h-full ${config.color} shadow-sm border border-black/20 hover:border-black/50 transition-colors flex items-center justify-center rounded-sm overflow-hidden">
                     <span class="text-[10px] font-bold ${config.textCol} text-center rotate-90 leading-tight block transform origin-center whitespace-nowrap">
                         ${config.label}
                     </span>
                 </div>
-                
-                <!-- Debug Angle (Visible on hover) -->
-                 <div class="angle-display absolute left-full top-0 ml-1 bg-black/70 text-white text-[9px] px-1 rounded opacity-0 group-hover:opacity-100 pointer-events-none">0°</div>
+                 <div class="angle-display absolute left-full top-0 ml-1 bg-black/70 text-white text-[9px] px-1 rounded opacity-0 group-hover:opacity-100 pointer-events-none">
+                    ${Math.round(rotation % 360)}°
+                 </div>
             `;
 
-            // Attach Events directly to this element
             el.addEventListener('mousedown', handleMouseDown);
             el.addEventListener('touchstart', handleMouseDown, { passive: false });
-
             paper.appendChild(el);
         }
 
-        // --- Global Interaction Logic ---
+        // --- 4. Drag & Rotate Logic (Same as before) ---
         let activeItem = null;
         let isDragging = false;
         let isRotating = false;
-        
-        // Drag Variables
-        let dragStartX, dragStartY;
-        let initialLeft, initialTop;
-
-        // Rotate Variables
-        let rotateStartAngle = 0;
-        let initialRotation = 0;
+        let dragStartX, dragStartY, initialLeft, initialTop;
+        let rotateStartAngle = 0, initialRotation = 0;
+        let maxZ = 10;
 
         function handleMouseDown(e) {
-            // Find the draggable wrapper
             const item = e.target.closest('.draggable-item');
             if (!item) return;
-
             activeItem = item;
-            
-            // Check if clicking the rotation handle
-            if (e.target.closest('.rotate-handle')) {
-                startRotate(e);
-            } else {
-                startDrag(e);
-            }
+            if (e.target.closest('.rotate-handle')) startRotate(e);
+            else startDrag(e);
         }
 
-        // --- DRAG ---
         function startDrag(e) {
             e.preventDefault();
             isDragging = true;
-            
-            // Bring to front
             bringToFront(activeItem);
-
             const clientX = e.type.includes('mouse') ? e.clientX : e.touches[0].clientX;
             const clientY = e.type.includes('mouse') ? e.clientY : e.touches[0].clientY;
-
-            dragStartX = clientX;
-            dragStartY = clientY;
-
-            // Get current visual position
-            // Note: We use offsetLeft/Top because transform handles rotation, left/top handles position
-            initialLeft = activeItem.offsetLeft;
-            initialTop = activeItem.offsetTop;
-
+            dragStartX = clientX; dragStartY = clientY;
+            initialLeft = activeItem.offsetLeft; initialTop = activeItem.offsetTop;
             document.addEventListener('mousemove', onDrag);
             document.addEventListener('mouseup', stopDrag);
             document.addEventListener('touchmove', onDrag, { passive: false });
             document.addEventListener('touchend', stopDrag);
-            
             activeItem.classList.add('opacity-80');
         }
 
         function onDrag(e) {
             if (!isDragging || !activeItem) return;
             e.preventDefault();
-
             const clientX = e.type.includes('mouse') ? e.clientX : e.touches[0].clientX;
             const clientY = e.type.includes('mouse') ? e.clientY : e.touches[0].clientY;
-
             const dx = clientX - dragStartX;
             const dy = clientY - dragStartY;
-
             activeItem.style.left = `${initialLeft + dx}px`;
             activeItem.style.top = `${initialTop + dy}px`;
         }
@@ -208,27 +303,19 @@
             clearGlobalEvents();
         }
 
-        // --- ROTATE ---
         function startRotate(e) {
             e.preventDefault();
             e.stopPropagation();
             isRotating = true;
             activeItem.classList.add('rotating');
             bringToFront(activeItem);
-
             const clientX = e.type.includes('mouse') ? e.clientX : e.touches[0].touches[0].clientX;
             const clientY = e.type.includes('mouse') ? e.clientY : e.touches[0].touches[0].clientY;
-
             const rect = activeItem.getBoundingClientRect();
             const centerX = rect.left + rect.width / 2;
             const centerY = rect.top + rect.height / 2;
-
-            // Current stored rotation
             initialRotation = parseFloat(activeItem.dataset.rotation) || 0;
-            
-            // Initial mouse angle relative to center
             rotateStartAngle = Math.atan2(clientY - centerY, clientX - centerX);
-
             document.addEventListener('mousemove', onRotate);
             document.addEventListener('mouseup', stopRotate);
             document.addEventListener('touchmove', onRotate, { passive: false });
@@ -238,27 +325,17 @@
         function onRotate(e) {
             if (!isRotating || !activeItem) return;
             e.preventDefault();
-
             const clientX = e.type.includes('mouse') ? e.clientX : e.touches[0].clientX;
             const clientY = e.type.includes('mouse') ? e.clientY : e.touches[0].clientY;
-
             const rect = activeItem.getBoundingClientRect();
             const centerX = rect.left + rect.width / 2;
             const centerY = rect.top + rect.height / 2;
-
             const currentMouseAngle = Math.atan2(clientY - centerY, clientX - centerX);
-            
-            // Delta angle
             const delta = currentMouseAngle - rotateStartAngle;
             const deltaDeg = delta * (180 / Math.PI);
-            
             let newRotation = initialRotation + deltaDeg;
-
-            // Apply rotation
             activeItem.style.transform = `rotate(${newRotation}deg)`;
             activeItem.dataset.rotation = newRotation;
-            
-            // Update UI text
             const display = activeItem.querySelector('.angle-display');
             if(display) display.textContent = `${Math.round(newRotation % 360)}°`;
         }
@@ -269,28 +346,24 @@
             clearGlobalEvents();
         }
 
-        // Cleanup
         function clearGlobalEvents() {
             document.removeEventListener('mousemove', onDrag);
             document.removeEventListener('mouseup', stopDrag);
             document.removeEventListener('touchmove', onDrag);
             document.removeEventListener('touchend', stopDrag);
-            
             document.removeEventListener('mousemove', onRotate);
             document.removeEventListener('mouseup', stopRotate);
             document.removeEventListener('touchmove', onRotate);
             document.removeEventListener('touchend', stopRotate);
         }
-        
-        // Z-Index Management
-        let maxZ = 10;
+
         function bringToFront(el) {
             maxZ++;
             el.style.zIndex = maxZ;
         }
 
-        // Initialize
-        initFleet();
+        // Start the App
+        initApp();
 
     </script>
 </body>
