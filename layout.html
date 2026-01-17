@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive Paper: Car Plan</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* กำหนดขนาดหน่วย cm */
+        .paper-size { width: 15cm; height: 30cm; }
+        
+        /* Box Dimensions */
+        .size-pickup { width: 2cm; height: 5.7cm; }
+        .size-mux { width: 2cm; height: 5.2cm; }
+        .size-frr { width: 2.2cm; height: 6cm; }
+
+        .no-select { user-select: none; -webkit-user-select: none; }
+
+        /* ลายกระดาษ */
+        .paper-bg {
+            background-color: white;
+            background-image: linear-gradient(#e5e7eb 1px, transparent 1px),
+            linear-gradient(90deg, #e5e7eb 1px, transparent 1px);
+            background-size: 1cm 1cm; /* ปรับ Grid เป็น 1cm เพื่อกะระยะง่ายขึ้น */
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
+        }
+
+        /* ซ่อน Handle หมุนถ้าไม่ได้ Hover (เพื่อให้ดูสะอาดตา) */
+        .draggable-item:hover .rotate-handle {
+            opacity: 1;
+        }
+        .rotate-handle {
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+        /* แต่ถ้ากำลังหมุนอยู่ ให้โชว์ค้างไว้ */
+        .draggable-item.rotating .rotate-handle {
+            opacity: 1;
+        }
+
+        /* Center text in box */
+        .box-text {
+            writing-mode: vertical-rl; /* เขียนแนวตั้งเพื่อให้เข้ากับทรงรถ */
+            text-orientation: mixed;
+        }
+    </style>
+</head>
+<body class="bg-slate-100 h-screen w-full overflow-hidden flex flex-col font-sans">
+
+    <!-- Header -->
+    <div class="bg-white p-3 shadow-sm z-20 flex justify-between items-center shrink-0 border-b">
+        <div>
+            <h1 class="text-lg font-bold text-slate-800">Layout Planner</h1>
+            <p class="text-xs text-slate-500">Total: 12 คัน (ลากและหมุนได้อิสระ)</p>
+        </div>
+        <div class="text-xs text-slate-600 bg-slate-50 px-3 py-1 rounded border">
+            <b>วิธีใช้:</b> คลิกตัวรถเพื่อ <span class="text-blue-600">ลาก</span> | คลิกจุดแดงเพื่อ <span class="text-red-600">หมุน</span>
+        </div>
+    </div>
+
+    <!-- Workspace -->
+    <div class="flex-1 overflow-auto flex justify-center p-8 cursor-grab bg-slate-200" id="workspace">
+        
+        <!-- The Paper -->
+        <div id="paper" class="paper-size paper-bg relative bg-white mx-auto border border-slate-300 shadow-xl">
+            <!-- Items will be injected here by JavaScript -->
+        </div>
+    </div>
+
+    <script>
+        const paper = document.getElementById('paper');
+
+        // ข้อมูลรถแต่ละประเภท
+        const fleetConfig = [
+            { type: 'pickup', label: 'รถกระบะ', count: 9, w: '2cm', h: '5.7cm', color: 'bg-gray-400', textCol: 'text-white' },
+            { type: 'mux',    label: 'MU-X',    count: 2, w: '2cm', h: '5.2cm', color: 'bg-sky-300',  textCol: 'text-slate-800' },
+            { type: 'frr',    label: 'FRR',     count: 1, w: '2.2cm', h: '6cm', color: 'bg-amber-300', textCol: 'text-slate-900' }
+        ];
+
+        // ฟังก์ชันสร้างรถ
+        function initFleet() {
+            let startX = 1; // cm
+            let startY = 1; // cm
+            const gapX = 2.5; // cm spacing
+            const gapY = 6.5; // cm spacing
+
+            fleetConfig.forEach(config => {
+                for (let i = 0; i < config.count; i++) {
+                    createCar(config, startX, startY);
+                    
+                    // จัดเรียงตำแหน่งเริ่มต้นแบบ Grid ง่ายๆ
+                    startX += gapX;
+                    if (startX > 12) { // ขึ้นบรรทัดใหม่ถ้าเกินขอบขวา
+                        startX = 1;
+                        startY += gapY;
+                    }
+                }
+            });
+        }
+
+        function createCar(config, x, y) {
+            const el = document.createElement('div');
+            el.className = 'draggable-item absolute cursor-move group select-none touch-none';
+            el.style.left = `${x}cm`;
+            el.style.top = `${y}cm`;
+            el.style.width = config.w;
+            el.style.height = config.h;
+            el.dataset.rotation = 0;
+            
+            // HTML Structure: Rotate Handle + Car Body
+            el.innerHTML = `
+                <!-- Rotate Handle -->
+                <div class="rotate-handle w-6 h-6 absolute -top-8 left-1/2 -translate-x-1/2 flex items-center justify-center cursor-alias z-50">
+                     <div class="w-3 h-3 bg-red-500 rounded-full border-2 border-white shadow hover:scale-125 transition-transform"></div>
+                     <div class="w-[1px] h-3 bg-red-300 absolute -bottom-3"></div>
+                </div>
+
+                <!-- Car Body -->
+                <div class="w-full h-full ${config.color} shadow-sm border border-black/20 hover:border-black/50 transition-colors flex items-center justify-center rounded-sm overflow-hidden">
+                    <span class="text-[10px] font-bold ${config.textCol} text-center rotate-90 leading-tight block transform origin-center whitespace-nowrap">
+                        ${config.label}
+                    </span>
+                </div>
+                
+                <!-- Debug Angle (Visible on hover) -->
+                 <div class="angle-display absolute left-full top-0 ml-1 bg-black/70 text-white text-[9px] px-1 rounded opacity-0 group-hover:opacity-100 pointer-events-none">0°</div>
+            `;
+
+            // Attach Events directly to this element
+            el.addEventListener('mousedown', handleMouseDown);
+            el.addEventListener('touchstart', handleMouseDown, { passive: false });
+
+            paper.appendChild(el);
+        }
+
+        // --- Global Interaction Logic ---
+        let activeItem = null;
+        let isDragging = false;
+        let isRotating = false;
+        
+        // Drag Variables
+        let dragStartX, dragStartY;
+        let initialLeft, initialTop;
+
+        // Rotate Variables
+        let rotateStartAngle = 0;
+        let initialRotation = 0;
+
+        function handleMouseDown(e) {
+            // Find the draggable wrapper
+            const item = e.target.closest('.draggable-item');
+            if (!item) return;
+
+            activeItem = item;
+            
+            // Check if clicking the rotation handle
+            if (e.target.closest('.rotate-handle')) {
+                startRotate(e);
+            } else {
+                startDrag(e);
+            }
+        }
+
+        // --- DRAG ---
+        function startDrag(e) {
+            e.preventDefault();
+            isDragging = true;
+            
+            // Bring to front
+            bringToFront(activeItem);
+
+            const clientX = e.type.includes('mouse') ? e.clientX : e.touches[0].clientX;
+            const clientY = e.type.includes('mouse') ? e.clientY : e.touches[0].clientY;
+
+            dragStartX = clientX;
+            dragStartY = clientY;
+
+            // Get current visual position
+            // Note: We use offsetLeft/Top because transform handles rotation, left/top handles position
+            initialLeft = activeItem.offsetLeft;
+            initialTop = activeItem.offsetTop;
+
+            document.addEventListener('mousemove', onDrag);
+            document.addEventListener('mouseup', stopDrag);
+            document.addEventListener('touchmove', onDrag, { passive: false });
+            document.addEventListener('touchend', stopDrag);
+            
+            activeItem.classList.add('opacity-80');
+        }
+
+        function onDrag(e) {
+            if (!isDragging || !activeItem) return;
+            e.preventDefault();
+
+            const clientX = e.type.includes('mouse') ? e.clientX : e.touches[0].clientX;
+            const clientY = e.type.includes('mouse') ? e.clientY : e.touches[0].clientY;
+
+            const dx = clientX - dragStartX;
+            const dy = clientY - dragStartY;
+
+            activeItem.style.left = `${initialLeft + dx}px`;
+            activeItem.style.top = `${initialTop + dy}px`;
+        }
+
+        function stopDrag() {
+            isDragging = false;
+            if (activeItem) activeItem.classList.remove('opacity-80');
+            clearGlobalEvents();
+        }
+
+        // --- ROTATE ---
+        function startRotate(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            isRotating = true;
+            activeItem.classList.add('rotating');
+            bringToFront(activeItem);
+
+            const clientX = e.type.includes('mouse') ? e.clientX : e.touches[0].touches[0].clientX;
+            const clientY = e.type.includes('mouse') ? e.clientY : e.touches[0].touches[0].clientY;
+
+            const rect = activeItem.getBoundingClientRect();
+            const centerX = rect.left + rect.width / 2;
+            const centerY = rect.top + rect.height / 2;
+
+            // Current stored rotation
+            initialRotation = parseFloat(activeItem.dataset.rotation) || 0;
+            
+            // Initial mouse angle relative to center
+            rotateStartAngle = Math.atan2(clientY - centerY, clientX - centerX);
+
+            document.addEventListener('mousemove', onRotate);
+            document.addEventListener('mouseup', stopRotate);
+            document.addEventListener('touchmove', onRotate, { passive: false });
+            document.addEventListener('touchend', stopRotate);
+        }
+
+        function onRotate(e) {
+            if (!isRotating || !activeItem) return;
+            e.preventDefault();
+
+            const clientX = e.type.includes('mouse') ? e.clientX : e.touches[0].clientX;
+            const clientY = e.type.includes('mouse') ? e.clientY : e.touches[0].clientY;
+
+            const rect = activeItem.getBoundingClientRect();
+            const centerX = rect.left + rect.width / 2;
+            const centerY = rect.top + rect.height / 2;
+
+            const currentMouseAngle = Math.atan2(clientY - centerY, clientX - centerX);
+            
+            // Delta angle
+            const delta = currentMouseAngle - rotateStartAngle;
+            const deltaDeg = delta * (180 / Math.PI);
+            
+            let newRotation = initialRotation + deltaDeg;
+
+            // Apply rotation
+            activeItem.style.transform = `rotate(${newRotation}deg)`;
+            activeItem.dataset.rotation = newRotation;
+            
+            // Update UI text
+            const display = activeItem.querySelector('.angle-display');
+            if(display) display.textContent = `${Math.round(newRotation % 360)}°`;
+        }
+
+        function stopRotate() {
+            isRotating = false;
+            if(activeItem) activeItem.classList.remove('rotating');
+            clearGlobalEvents();
+        }
+
+        // Cleanup
+        function clearGlobalEvents() {
+            document.removeEventListener('mousemove', onDrag);
+            document.removeEventListener('mouseup', stopDrag);
+            document.removeEventListener('touchmove', onDrag);
+            document.removeEventListener('touchend', stopDrag);
+            
+            document.removeEventListener('mousemove', onRotate);
+            document.removeEventListener('mouseup', stopRotate);
+            document.removeEventListener('touchmove', onRotate);
+            document.removeEventListener('touchend', stopRotate);
+        }
+        
+        // Z-Index Management
+        let maxZ = 10;
+        function bringToFront(el) {
+            maxZ++;
+            el.style.zIndex = maxZ;
+        }
+
+        // Initialize
+        initFleet();
+
+    </script>
+</body>
+</html>
