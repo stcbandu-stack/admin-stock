@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Interactive Paper: DB Phase 1</title>
+    <title>Interactive Paper: Zoom & Pan Supported</title>
     
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -23,17 +23,18 @@
             background-image: linear-gradient(#e5e7eb 1px, transparent 1px),
             linear-gradient(90deg, #e5e7eb 1px, transparent 1px);
             background-size: 1cm 1cm;
-            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
-            transform-origin: center center;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            transform-origin: top left; 
         }
 
         /* Styles สำหรับวัตถุ */
         .draggable-item {
             transition: box-shadow 0.2s;
+            cursor: move; /* ให้วัตถุเป็น cursor move เสมอ */
         }
         .draggable-item.active-item {
             z-index: 100 !important;
-            box-shadow: 0 0 0 2px #3b82f6; /* Blue outline when active */
+            box-shadow: 0 0 0 2px #3b82f6;
         }
 
         /* Interaction Styles */
@@ -57,6 +58,30 @@
         .modal-overlay {
             background-color: rgba(0, 0, 0, 0.5);
         }
+
+        /* Custom Scrollbar for Workspace */
+        #workspace::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        #workspace::-webkit-scrollbar-track {
+            background: #f1f5f9; 
+        }
+        #workspace::-webkit-scrollbar-thumb {
+            background: #cbd5e1; 
+            border-radius: 4px;
+        }
+        #workspace::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8; 
+        }
+        
+        /* Cursor for Workspace */
+        #workspace {
+            cursor: grab;
+        }
+        #workspace:active {
+            cursor: grabbing;
+        }
     </style>
 </head>
 <body class="bg-slate-800 h-screen w-full overflow-hidden flex flex-col font-sans">
@@ -79,18 +104,18 @@
                 <!-- Save Position Button -->
                 <button onclick="savePositions()" id="save-btn" class="bg-green-600 hover:bg-green-700 text-white px-3 py-1.5 rounded shadow text-xs sm:text-sm flex items-center gap-1">
                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
-                    <span id="save-text">บันทึกตำแหน่ง</span>
+                    <span id="save-text">บันทึก</span>
                 </button>
             </div>
         </div>
     </div>
 
     <!-- Workspace -->
-    <div class="flex-1 overflow-hidden flex items-center justify-center bg-slate-200 relative w-full h-full" id="workspace" onclick="deselectAll(event)">
+    <div class="flex-1 overflow-auto bg-slate-200 relative w-full h-full flex" id="workspace">
         
-        <!-- The Paper Wrapper -->
-        <div id="paper-container" class="flex items-center justify-center transition-transform duration-200">
-            <div id="paper" class="paper-size paper-bg relative bg-white border border-slate-300 shadow-xl" onclick="event.stopPropagation()"> <!-- Stop propagation to prevent deselect when clicking paper background -->
+        <!-- Wrapper for centering and sizing -->
+        <div id="paper-wrapper" class="relative m-auto transition-all duration-200 ease-out box-content p-10">
+            <div id="paper" class="paper-size paper-bg relative bg-white border border-slate-300 shadow-xl"> 
                 
                 <!-- Layout Boundary -->
                 <div class="absolute border-2 border-black pointer-events-none z-0" 
@@ -102,8 +127,22 @@
             </div>
         </div>
 
-        <!-- Delete Action Floating Button (Hidden by default) -->
-        <div id="delete-panel" class="absolute bottom-6 right-6 translate-y-20 transition-transform duration-300 z-30">
+        <!-- Zoom Controls -->
+        <div class="fixed bottom-4 left-4 z-40 flex flex-col gap-2 bg-white/90 p-2 rounded-lg shadow-lg backdrop-blur-sm border border-slate-200">
+            <button onclick="adjustZoom(0.1)" class="p-2 hover:bg-slate-100 rounded text-slate-700" title="Zoom In">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line><line x1="11" y1="8" x2="11" y2="14"></line><line x1="8" y1="11" x2="14" y2="11"></line></svg>
+            </button>
+            <div id="zoom-level-text" class="text-[10px] text-center font-mono text-slate-500">100%</div>
+            <button onclick="adjustZoom(-0.1)" class="p-2 hover:bg-slate-100 rounded text-slate-700" title="Zoom Out">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line><line x1="8" y1="11" x2="14" y2="11"></line></svg>
+            </button>
+            <button onclick="resetZoom()" class="p-2 hover:bg-slate-100 rounded text-slate-700 border-t mt-1" title="Fit Screen">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"></path></svg>
+            </button>
+        </div>
+
+        <!-- Delete Action Floating Button -->
+        <div id="delete-panel" class="absolute bottom-6 right-6 translate-y-20 transition-transform duration-300 z-30 fixed">
             <button onclick="softDeleteActiveItem()" class="bg-red-500 hover:bg-red-600 text-white px-4 py-3 rounded-full shadow-lg flex items-center gap-2 font-bold">
                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
                 ลบวัตถุนี้
@@ -111,7 +150,7 @@
         </div>
 
         <!-- Loader -->
-        <div id="loader" class="absolute inset-0 z-50 flex items-center justify-center flex-col">
+        <div id="loader" class="absolute inset-0 z-50 flex items-center justify-center flex-col fixed">
             <div class="animate-spin rounded-full h-10 w-10 border-b-2 border-slate-800 mb-3"></div>
             <span class="text-slate-600 font-medium text-sm">กำลังโหลดข้อมูล...</span>
         </div>
@@ -163,9 +202,11 @@
         const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
         const paper = document.getElementById('paper');
+        const paperWrapper = document.getElementById('paper-wrapper');
         const workspace = document.getElementById('workspace');
         const loader = document.getElementById('loader');
         const deletePanel = document.getElementById('delete-panel');
+        const zoomText = document.getElementById('zoom-level-text');
 
         // Color Mapping
         const typeColors = {
@@ -176,37 +217,138 @@
         };
 
         // Global State
-        let currentScale = 1;
+        let baseScale = 1;      
+        let userZoom = 1.0;     
+        let totalScale = 1;     
         let activeItem = null;
 
-        // --- SCALE MANAGEMENT ---
-        function fitPaperToScreen() {
-            const margin = 20;
+        // --- PANNING LOGIC ---
+        let isPanning = false;
+        let hasPanned = false; 
+        let panStartX = 0, panStartY = 0;
+        let scrollStartX = 0, scrollStartY = 0;
+
+        workspace.addEventListener('mousedown', (e) => {
+            if (e.target.closest('.draggable-item') || 
+                e.target.closest('.rotate-handle') ||
+                e.target.closest('button') || 
+                e.target.closest('.modal-overlay') || 
+                e.target.closest('#add-modal')) {
+                return;
+            }
+
+            isPanning = true;
+            hasPanned = false;
+            panStartX = e.clientX;
+            panStartY = e.clientY;
+            scrollStartX = workspace.scrollLeft;
+            scrollStartY = workspace.scrollTop;
+            
+            workspace.style.cursor = 'grabbing';
+            document.body.style.cursor = 'grabbing';
+
+            document.addEventListener('mousemove', onPanMouseMove);
+            document.addEventListener('mouseup', onPanMouseUp);
+        });
+
+        function onPanMouseMove(e) {
+            if (!isPanning) return;
+            e.preventDefault(); 
+
+            const dx = e.clientX - panStartX;
+            const dy = e.clientY - panStartY;
+            
+            if (Math.abs(dx) > 5 || Math.abs(dy) > 5) {
+                hasPanned = true;
+            }
+
+            workspace.scrollLeft = scrollStartX - dx;
+            workspace.scrollTop = scrollStartY - dy;
+        }
+
+        function onPanMouseUp() {
+            isPanning = false;
+            workspace.style.cursor = 'grab';
+            document.body.style.cursor = '';
+            document.removeEventListener('mousemove', onPanMouseMove);
+            document.removeEventListener('mouseup', onPanMouseUp);
+        }
+
+        workspace.addEventListener('click', (e) => {
+            if (hasPanned) {
+                hasPanned = false;
+                return;
+            }
+            
+            if (e.target.closest('.draggable-item') || 
+                e.target.closest('.rotate-handle') ||
+                e.target.closest('button') || 
+                e.target.closest('.modal-overlay') || 
+                e.target.closest('#add-modal')) {
+                return;
+            }
+
+            deselectAll();
+        });
+
+        // --- SCALE & ZOOM MANAGEMENT ---
+        
+        function calculateBaseScale() {
+            const margin = 40; 
             const availableWidth = workspace.clientWidth - (margin * 2);
             const availableHeight = workspace.clientHeight - (margin * 2);
             
+            const currentTransform = paper.style.transform;
             paper.style.transform = 'none';
             const paperWidth = paper.offsetWidth;
             const paperHeight = paper.offsetHeight;
+            paper.style.transform = currentTransform;
 
             const scaleX = availableWidth / paperWidth;
             const scaleY = availableHeight / paperHeight;
-            currentScale = Math.min(scaleX, scaleY, 1.0); 
-
-            paper.style.transform = `scale(${currentScale})`;
+            
+            baseScale = Math.min(scaleX, scaleY, 1.0); 
+            updateTransform();
         }
-        window.addEventListener('resize', fitPaperToScreen);
 
-        // --- 2. DB Logic (Phase 1) ---
+        function updateTransform() {
+            totalScale = baseScale * userZoom;
+            paper.style.transform = `scale(${totalScale})`;
+            
+            const paperWidth = 15 * 37.8; 
+            const paperHeight = 30 * 37.8; 
+            
+            paperWrapper.style.width = `${paperWidth * totalScale}px`;
+            paperWrapper.style.height = `${paperHeight * totalScale}px`;
+            
+            zoomText.innerText = `${Math.round(userZoom * 100)}%`;
+        }
+
+        function adjustZoom(delta) {
+            userZoom += delta;
+            if (userZoom < 0.2) userZoom = 0.2; 
+            if (userZoom > 5.0) userZoom = 5.0; 
+            updateTransform();
+        }
+
+        function resetZoom() {
+            userZoom = 1.0;
+            calculateBaseScale();
+        }
+
+        window.addEventListener('resize', () => {
+            calculateBaseScale();
+        });
+
+        // --- DB Logic ---
 
         async function initApp() {
-            fitPaperToScreen();
+            calculateBaseScale(); 
             await fetchObjects();
             loader.classList.add('hidden');
         }
 
         async function fetchObjects() {
-            // Select all active objects (is_deleted = false)
             const { data, error } = await supabaseClient
                 .from('canvas_objects')
                 .select('*')
@@ -219,7 +361,6 @@
                 return;
             }
 
-            // Clear & Render
             const existingItems = document.querySelectorAll('.draggable-item');
             existingItems.forEach(el => el.remove());
 
@@ -234,31 +375,39 @@
             const originalText = txt.innerText;
             
             btn.classList.add('opacity-75', 'cursor-not-allowed');
-            txt.innerText = 'กำลังบันทึก...';
+            txt.innerText = '...';
             
-            // Prepare Upsert Data
             const items = document.querySelectorAll('.draggable-item');
-            const updates = Array.from(items).map(el => ({
-                id: el.dataset.dbId,
-                position_x: parseFloat(el.style.left) || 0, // Store as is (might contain 'px' or 'cm' but DB expects numeric if we strip it, let's keep it simple)
-                // Wait, DB defines position as Numeric. CSS 'left' is string with unit.
-                // Let's standardise: Save as Pixel value (numeric) to keep it simple, or ensure we convert.
-                // In this code, style.left might be "100px".
-                position_x: parseFloat(el.style.left), 
-                position_y: parseFloat(el.style.top),
-                rotation: parseFloat(el.dataset.rotation),
-                updated_at: new Date()
-            }));
+            const updates = Array.from(items).map(el => {
+                const id = parseInt(el.dataset.dbId);
+                const w = parseFloat(el.dataset.w) || 2;
+                const h = parseFloat(el.dataset.h) || 2;
+                const posX = parseFloat(el.style.left) || 0;
+                const posY = parseFloat(el.style.top) || 0;
+                const rot = parseFloat(el.dataset.rotation) || 0;
+
+                return {
+                    id: id,
+                    name: el.dataset.name || 'Object',
+                    type: el.dataset.type || 'custom',
+                    width: w,
+                    height: h,
+                    position_x: posX,
+                    position_y: posY,
+                    rotation: rot,
+                    is_deleted: false,
+                    updated_at: new Date()
+                };
+            });
 
             try {
-                // Upsert multiple rows
                 const { error } = await supabaseClient
                     .from('canvas_objects')
                     .upsert(updates);
 
                 if (error) throw error;
 
-                txt.innerText = 'เรียบร้อย!';
+                txt.innerText = 'OK';
                 btn.classList.replace('bg-green-600', 'bg-blue-600');
                 setTimeout(() => {
                     txt.innerText = originalText;
@@ -267,23 +416,28 @@
                 }, 1500);
             } catch (err) {
                 console.error(err);
-                alert('บันทึกไม่สำเร็จ: ' + err.message);
+                alert('Error: ' + err.message);
                 txt.innerText = originalText;
                 btn.classList.remove('opacity-75', 'cursor-not-allowed');
             }
         }
 
         async function confirmAddObject() {
-            const name = document.getElementById('input-name').value || 'Object';
-            const w = parseFloat(document.getElementById('input-width').value) || 2;
-            const h = parseFloat(document.getElementById('input-height').value) || 2;
+            const nameInput = document.getElementById('input-name').value;
+            const name = nameInput ? nameInput.trim() : 'Object';
+            
+            const wInput = parseFloat(document.getElementById('input-width').value);
+            const hInput = parseFloat(document.getElementById('input-height').value);
+            
+            const w = isNaN(wInput) ? 2 : wInput;
+            const h = isNaN(hInput) ? 5.7 : hInput;
+            
             const type = document.getElementById('input-type').value;
 
             closeAddModal();
             loader.classList.remove('hidden');
 
             try {
-                // Insert into DB
                 const { data, error } = await supabaseClient
                     .from('canvas_objects')
                     .insert([{
@@ -291,20 +445,22 @@
                         width: w,
                         height: h,
                         type: type,
-                        position_x: 50, // Default start pos
+                        position_x: 50,
                         position_y: 50,
-                        rotation: 0
+                        rotation: 0,
+                        is_deleted: false
                     }])
                     .select()
                     .single();
 
                 if (error) throw error;
+                if (!data) throw new Error('No data returned');
 
-                // Create DOM
                 createDOMElement(data);
                 
             } catch (err) {
-                alert('เพิ่มวัตถุไม่สำเร็จ: ' + err.message);
+                console.error(err);
+                alert('Error: ' + err.message);
             } finally {
                 loader.classList.add('hidden');
             }
@@ -312,74 +468,86 @@
 
         async function softDeleteActiveItem() {
             if (!activeItem) return;
-            const dbId = activeItem.dataset.dbId;
-            if (!dbId) return;
+            
+            const dbId = parseInt(activeItem.dataset.dbId);
+            
+            if (!dbId || isNaN(dbId)) {
+                alert('ไม่พบ ID ของวัตถุ (Error: Invalid ID)');
+                return;
+            }
 
             if (!confirm(`ต้องการลบ "${activeItem.dataset.name}" ใช่ไหม?`)) return;
 
             try {
-                // Soft Delete in DB
-                const { error } = await supabaseClient
+                // Soft Delete in DB and CHECK RESULT via select()
+                const { data, error } = await supabaseClient
                     .from('canvas_objects')
                     .update({ is_deleted: true })
-                    .eq('id', dbId);
+                    .eq('id', dbId)
+                    .select();
 
                 if (error) throw error;
+                
+                // ถ้าไม่มีข้อมูลกลับมา แสดงว่า ID ไม่ตรง (ลบไม่เจอ)
+                if (!data || data.length === 0) {
+                     alert('ไม่พบข้อมูลในฐานข้อมูล (ID ไม่ตรงกัน) กรุณารีเฟรชหน้าจอ');
+                     return;
+                }
 
-                // Remove from DOM
+                // ถ้าสำเร็จ ลบออกจากหน้าจอ
                 activeItem.remove();
                 deselectAll();
 
             } catch (err) {
-                alert('ลบไม่สำเร็จ: ' + err.message);
+                console.error(err);
+                alert('Error: ' + err.message);
             }
         }
 
-        // --- 3. DOM Creation ---
+        // --- DOM Creation ---
 
         function createDOMElement(obj) {
+            if (!obj) return;
+
             const el = document.createElement('div');
             el.className = 'draggable-item absolute cursor-move group select-none touch-none';
             
-            // Set Size
-            el.style.width = `${obj.width}cm`;
-            el.style.height = `${obj.height}cm`;
+            const w = obj.width || 2;
+            const h = obj.height || 2;
+            const posX = (obj.position_x !== undefined && obj.position_x !== null) ? obj.position_x : 50;
+            const posY = (obj.position_y !== undefined && obj.position_y !== null) ? obj.position_y : 50;
+            const rot = obj.rotation || 0;
+
+            el.style.width = `${w}cm`;
+            el.style.height = `${h}cm`;
+            el.style.left = `${posX}px`;
+            el.style.top = `${posY}px`;
+            el.style.transform = `rotate(${rot}deg)`;
             
-            // Set Position (Check if data is cm or px. Assuming initial DB insert was PX or CM converted)
-            // If fetching from DB, we treat position_x as pixels for CSS "left"
-            el.style.left = `${obj.position_x}px`;
-            el.style.top = `${obj.position_y}px`;
-            el.style.transform = `rotate(${obj.rotation}deg)`;
-            
-            // Data Attributes
             el.dataset.dbId = obj.id;
-            el.dataset.rotation = obj.rotation;
-            el.dataset.name = obj.name;
+            el.dataset.rotation = rot;
+            el.dataset.name = obj.name || 'Object';
+            el.dataset.w = w; 
+            el.dataset.h = h; 
+            el.dataset.type = obj.type || 'custom';
             
-            // Styles
-            const style = typeColors[obj.type] || typeColors['custom'];
+            const style = typeColors[el.dataset.type] || typeColors['custom'];
             
             el.innerHTML = `
-                <!-- Rotate Handle -->
                 <div class="rotate-handle w-8 h-8 absolute -top-10 left-1/2 -translate-x-1/2 flex items-center justify-center cursor-alias z-50">
                      <div class="w-4 h-4 bg-red-500 rounded-full border-2 border-white shadow hover:scale-125 transition-transform"></div>
                      <div class="w-[1px] h-4 bg-red-300 absolute -bottom-4"></div>
                 </div>
-
-                <!-- Body -->
                 <div class="w-full h-full ${style.bg} shadow-sm border border-black/20 hover:border-black/50 transition-colors flex items-center justify-center rounded-sm overflow-hidden pointer-events-none">
                     <span class="text-[10px] font-bold ${style.txt} text-center rotate-90 leading-tight block transform origin-center whitespace-nowrap">
-                        ${obj.name}
+                        ${el.dataset.name}
                     </span>
                 </div>
-                
-                <!-- Angle Tooltip -->
                  <div class="angle-display absolute left-full top-0 ml-1 bg-black/70 text-white text-[9px] px-1 rounded opacity-0 group-hover:opacity-100 pointer-events-none">
-                    ${Math.round(obj.rotation % 360)}°
+                    ${Math.round(rot % 360)}°
                  </div>
             `;
 
-            // Events
             el.addEventListener('mousedown', handleMouseDown);
             el.addEventListener('touchstart', handleMouseDown, { passive: false });
             el.addEventListener('click', (e) => selectItem(e, el));
@@ -387,21 +555,15 @@
             paper.appendChild(el);
         }
 
-        // --- 4. Interaction Logic ---
+        // --- Interaction Logic ---
 
         function selectItem(e, el) {
-            e.stopPropagation(); // Don't trigger workspace click
-            
-            // Deselect old
+            e.stopPropagation();
             if (activeItem && activeItem !== el) {
                 activeItem.classList.remove('active-item');
             }
-            
-            // Select new
             activeItem = el;
             activeItem.classList.add('active-item');
-            
-            // Show Delete Button
             deletePanel.classList.remove('translate-y-20');
         }
 
@@ -410,12 +572,11 @@
                 activeItem.classList.remove('active-item');
                 activeItem = null;
             }
-            // Hide Delete Button
             deletePanel.classList.add('translate-y-20');
         }
 
-        // Drag & Rotate Logic (Same as before, simplified vars)
-        let isDragging = false, isRotating = false;
+        let isDraggingItem = false;
+        let isRotating = false;
         let startX, startY, startLeft, startTop;
         let startRotation, startAngle;
 
@@ -423,7 +584,6 @@
             const item = e.target.closest('.draggable-item');
             if (!item) return;
 
-            // Auto select on drag start
             selectItem(e, item);
 
             if (e.target.closest('.rotate-handle')) {
@@ -435,7 +595,7 @@
 
         function startDrag(e, item) {
             e.preventDefault();
-            isDragging = true;
+            isDraggingItem = true;
             
             const clientX = e.type.includes('mouse') ? e.clientX : e.touches[0].clientX;
             const clientY = e.type.includes('mouse') ? e.clientY : e.touches[0].clientY;
@@ -452,21 +612,21 @@
         }
 
         function onDrag(e) {
-            if (!isDragging || !activeItem) return;
+            if (!isDraggingItem || !activeItem) return;
             e.preventDefault();
 
             const clientX = e.type.includes('mouse') ? e.clientX : e.touches[0].clientX;
             const clientY = e.type.includes('mouse') ? e.clientY : e.touches[0].clientY;
 
-            const dx = (clientX - startX) / currentScale;
-            const dy = (clientY - startY) / currentScale;
+            const dx = (clientX - startX) / totalScale;
+            const dy = (clientY - startY) / totalScale;
 
             activeItem.style.left = `${startLeft + dx}px`;
             activeItem.style.top = `${startTop + dy}px`;
         }
 
         function stopDrag() {
-            isDragging = false;
+            isDraggingItem = false;
             document.removeEventListener('mousemove', onDrag);
             document.removeEventListener('mouseup', stopDrag);
             document.removeEventListener('touchmove', onDrag);
@@ -526,11 +686,9 @@
             document.removeEventListener('touchend', stopRotate);
         }
 
-        // --- UI Modals ---
         function openAddModal() { document.getElementById('add-modal').classList.remove('hidden'); }
         function closeAddModal() { document.getElementById('add-modal').classList.add('hidden'); }
 
-        // Start
         initApp();
 
     </script>
