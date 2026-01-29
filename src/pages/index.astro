@@ -1,0 +1,20 @@
+---
+import MainLayout from '@/layouts/MainLayout.astro';
+import Navbar from '@/components/common/Navbar.vue';
+import LoginModal from '@/components/auth/LoginModal.vue';
+import Toast from '@/components/common/Toast.vue';
+import StockDashboard from '@/components/stock/StockDashboard.vue';
+---
+
+<MainLayout title="ระบบสต็อคของชำร่วย (Admin)">
+  <div id="app">
+    <Navbar client:only="vue" currentPath="/" />
+    
+    <div class="max-w-6xl mx-auto p-6">
+      <StockDashboard client:only="vue" />
+    </div>
+    
+    <LoginModal client:only="vue" />
+    <Toast client:only="vue" />
+  </div>
+</MainLayout>
