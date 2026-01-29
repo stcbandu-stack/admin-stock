@@ -144,10 +144,13 @@ async function handleGoogleLogin() {
   error.value = '';
   
   try {
+    // Get current URL without query string to ensure it matches allowed redirect URLs
+    const redirectUrl = window.location.origin + window.location.pathname;
+    
     const { error: authError } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
-        redirectTo: window.location.origin
+        redirectTo: redirectUrl
       }
     });
 
