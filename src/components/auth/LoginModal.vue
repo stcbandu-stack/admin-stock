@@ -60,6 +60,22 @@
             <i v-if="loading" class="fa-solid fa-circle-notch fa-spin"></i>
             <span>{{ loading ? 'กำลังเข้าสู่ระบบ...' : 'เข้าสู่ระบบ' }}</span>
           </button>
+
+          <div class="relative flex py-2 items-center">
+            <div class="flex-grow border-t border-gray-300"></div>
+            <span class="flex-shrink-0 mx-4 text-gray-400 text-xs">หรือ</span>
+            <div class="flex-grow border-t border-gray-300"></div>
+          </div>
+
+          <button 
+            type="button" 
+            @click="handleGoogleLogin"
+            :disabled="loading"
+            class="w-full bg-white text-gray-700 border border-gray-300 py-2.5 rounded-lg font-medium hover:bg-gray-50 focus:ring-4 focus:ring-gray-100 transition disabled:opacity-50 disabled:cursor-not-allowed flex justify-center items-center gap-2"
+          >
+            <img src="/google-logo.svg" alt="Google" class="w-5 h-5" />
+            <span>เข้าสู่ระบบด้วย Google</span>
+          </button>
         </form>
       </div>
       <div class="bg-gray-50 px-6 py-4 border-t border-gray-100 flex justify-end">
@@ -119,6 +135,28 @@ async function handleLogin() {
     console.error('Login error:', err);
     error.value = 'อีเมลหรือรหัสผ่านไม่ถูกต้อง';
   } finally {
+    loading.value = false;
+  }
+}
+
+async function handleGoogleLogin() {
+  loading.value = true;
+  error.value = '';
+  
+  try {
+    const { error: authError } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo: window.location.origin
+      }
+    });
+
+    if (authError) throw authError;
+    
+    // The browser will redirect to Google authentication
+  } catch (err: any) {
+    console.error('Google login error:', err);
+    error.value = 'เกิดข้อผิดพลาดในการเข้าสู่ระบบด้วย Google';
     loading.value = false;
   }
 }
