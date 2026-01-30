@@ -6,6 +6,15 @@ export default {
       fontFamily: {
         sans: ['Sarabun', 'sans-serif'],
       },
+      keyframes: {
+        'spin': {
+          from: { transform: 'rotate(0deg)' },
+          to: { transform: 'rotate(360deg)' },
+        },
+      },
+      animation: {
+        'spin': 'spin 1s linear infinite',
+      },
     },
   },
   plugins: [],

@@ -20,6 +20,13 @@
         <span class="md:hidden">ประวัติ</span> 
         <span class="hidden md:inline">ประวัติการทำรายการ</span>
       </a>
+      <a 
+        href="/summary" 
+        :class="['text-sm md:text-base font-bold transition', isActive('/summary') ? 'text-black border-b-2 border-black' : 'text-gray-500 hover:text-red-600']"
+      >
+        <span class="md:hidden">สรุป</span> 
+        <span class="hidden md:inline">สรุปข้อมูล</span>
+      </a>
 
       <!-- Auth Section -->
       <div v-if="currentUser">

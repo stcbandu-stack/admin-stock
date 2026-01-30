@@ -12,8 +12,15 @@
   "dependencies": {
     "@astrojs/vue": "^4.5.3",
     "@supabase/supabase-js": "^2.39.0",
+    "@vueuse/core": "^14.1.0",
     "astro": "^4.0.0",
-    "vue": "^3.5.27"
+    "chart.js": "^4.5.1",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
+    "lucide-vue-next": "^0.563.0",
+    "tailwind-merge": "^3.4.0",
+    "vue": "^3.5.27",
+    "vue-chartjs": "^5.3.3"
   },
   "devDependencies": {
     "@astrojs/tailwind": "^5.1.0",
