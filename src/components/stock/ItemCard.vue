@@ -10,7 +10,7 @@
       >
       
       <!-- Upload Overlay on Hover -->
-      <div v-if="isLoggedIn" class="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center z-20">
+      <div v-if="isLoggedIn && editMode" class="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center z-20">
         <button 
           @click="$refs.fileInput.click()" 
           class="bg-white text-black px-4 py-2 rounded-full font-bold text-sm shadow-lg hover:scale-105 transition"
@@ -49,7 +49,7 @@
         </div>
         <h3 v-else class="font-bold text-lg text-gray-800 leading-tight flex items-start justify-between group/edit">
           <span class="line-clamp-1" :title="item.name">{{ item.name }}</span>
-          <button v-if="isLoggedIn" @click="startEdit('name')" class="text-gray-400 hover:text-black hover:scale-110 ml-2 transition">
+          <button v-if="isLoggedIn && editMode" @click="startEdit('name')" class="text-gray-400 hover:text-black hover:scale-110 ml-2 transition">
             <i class="fa-solid fa-pen text-xs"></i>
           </button>
         </h3>
@@ -72,7 +72,7 @@
             <span class="text-[10px] bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded font-bold border border-gray-200">
               ทุน: {{ item.cost_per_unit?.toLocaleString() || '-' }} บ.
             </span>
-            <button v-if="isLoggedIn" @click="startEdit('cost')" class="text-gray-400 hover:text-black hover:scale-110 -ml-1 transition">
+            <button v-if="isLoggedIn && editMode" @click="startEdit('cost')" class="text-gray-400 hover:text-black hover:scale-110 -ml-1 transition">
               <i class="fa-solid fa-pen text-[9px]"></i>
             </button>
           </div>
@@ -97,7 +97,7 @@
           <p class="text-gray-500 text-xs line-clamp-2 h-8 overflow-hidden pr-4">
             {{ item.description || '-' }}
           </p>
-          <button v-if="isLoggedIn" @click="startEdit('description')" class="absolute top-0 right-0 text-gray-400 hover:text-black hover:scale-110 transition">
+          <button v-if="isLoggedIn && editMode" @click="startEdit('description')" class="absolute top-0 right-0 text-gray-400 hover:text-black hover:scale-110 transition">
             <i class="fa-solid fa-pen text-[9px]"></i>
           </button>
         </div>
@@ -157,6 +157,7 @@ import type { StockItem } from './types';
 const props = defineProps<{
   item: StockItem;
   isLoggedIn: boolean;
+  editMode: boolean;
 }>();
 
 const emit = defineEmits(['restock', 'withdraw', 'edit', 'delete', 'update-inline', 'update-image']);

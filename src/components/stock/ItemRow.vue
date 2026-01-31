@@ -9,7 +9,7 @@
             class="w-full h-full object-cover rounded-md border bg-gray-100"
             :alt="item.name"
           >
-          <div v-if="isLoggedIn" class="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 rounded-md flex items-center justify-center transition cursor-pointer" @click="$refs.fileInput.click()">
+          <div v-if="isLoggedIn && editMode" class="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 rounded-md flex items-center justify-center transition cursor-pointer" @click="$refs.fileInput.click()">
             <i class="fa-solid fa-camera text-white text-xs"></i>
           </div>
           <input 
@@ -37,7 +37,7 @@
           </div>
           <div v-else class="flex items-center gap-2 group/edit">
             <div class="font-bold text-gray-800 text-sm truncate" :title="item.name">{{ item.name }}</div>
-            <button v-if="isLoggedIn" @click="startEdit('name')" class="text-gray-400 hover:text-black hover:scale-110 transition">
+            <button v-if="isLoggedIn && editMode" @click="startEdit('name')" class="text-gray-400 hover:text-black hover:scale-110 transition">
               <i class="fa-solid fa-pen text-[10px]"></i>
             </button>
           </div>
@@ -57,7 +57,7 @@
           </div>
           <div v-else class="flex items-center gap-2 group/edit">
             <div class="text-xs text-gray-500 truncate max-w-[150px]">{{ item.description || '-' }}</div>
-            <button v-if="isLoggedIn" @click="startEdit('description')" class="text-gray-400 hover:text-black hover:scale-110 transition">
+            <button v-if="isLoggedIn && editMode" @click="startEdit('description')" class="text-gray-400 hover:text-black hover:scale-110 transition">
               <i class="fa-solid fa-pen text-[9px]"></i>
             </button>
           </div>
@@ -81,7 +81,7 @@
       </div>
       <div v-else class="flex items-center justify-end gap-2 group/edit">
         <span class="font-mono text-gray-600">{{ item.cost_per_unit?.toLocaleString() || '-' }}</span>
-        <button v-if="isLoggedIn" @click="startEdit('cost')" class="text-gray-400 hover:text-black hover:scale-110 transition">
+        <button v-if="isLoggedIn && editMode" @click="startEdit('cost')" class="text-gray-400 hover:text-black hover:scale-110 transition">
           <i class="fa-solid fa-pen text-[10px]"></i>
         </button>
       </div>
@@ -131,6 +131,7 @@ import type { StockItem } from './types';
 const props = defineProps<{
   item: StockItem;
   isLoggedIn: boolean;
+  editMode: boolean;
 }>();
 
 const emit = defineEmits(['restock', 'withdraw', 'edit', 'delete', 'update-inline', 'update-image']);

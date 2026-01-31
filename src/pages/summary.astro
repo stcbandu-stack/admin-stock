@@ -1,20 +1,21 @@
 ---
 import MainLayout from '@/layouts/MainLayout.astro';
 import Navbar from '@/components/common/Navbar.vue';
-import LoginModal from '@/components/auth/LoginModal.vue';
+import AuthGuard from '@/components/auth/AuthGuard.vue';
 import Toast from '@/components/common/Toast.vue';
 import DataSummaryDashboard from '@/components/summary/DataSummaryDashboard.vue';
 ---
 
 <MainLayout title="สรุปข้อมูล | ระบบสต็อคของชำร่วย">
   <div id="app">
-    <Navbar client:only="vue" currentPath="/summary" />
+    <AuthGuard client:only="vue">
+      <Navbar client:only="vue" currentPath="/summary" />
+      
+      <div class="max-w-7xl mx-auto p-4 md:p-6">
+        <DataSummaryDashboard client:only="vue" />
+      </div>
+    </AuthGuard>
     
-    <div class="max-w-7xl mx-auto p-4 md:p-6">
-      <DataSummaryDashboard client:only="vue" />
-    </div>
-    
-    <LoginModal client:only="vue" />
     <Toast client:only="vue" />
   </div>
 </MainLayout>

@@ -446,37 +446,6 @@
         </CardContent>
       </Card>
     </div>
-
-    <!-- Login Overlay -->
-    <div 
-      v-if="!isLoggedIn"
-      class="fixed inset-0 z-40 flex items-center justify-center bg-black/40 backdrop-blur-sm"
-    >
-      <Card class="w-full max-w-md mx-4 shadow-2xl">
-        <CardHeader class="text-center pb-2">
-          <div class="mx-auto w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
-            <Lock class="h-8 w-8 text-gray-600" />
-          </div>
-          <CardTitle class="text-xl">ต้องการเข้าสู่ระบบ</CardTitle>
-          <CardDescription>กรุณาเข้าสู่ระบบเพื่อดูข้อมูลสรุป</CardDescription>
-        </CardHeader>
-        <CardContent class="text-center pt-4">
-          <p class="text-sm text-gray-500 mb-6">
-            หน้านี้แสดงข้อมูลสรุปและสถิติที่สำคัญ<br/>
-            เฉพาะเจ้าหน้าที่เท่านั้นที่สามารถเข้าถึงได้
-          </p>
-          <div class="flex flex-col gap-3">
-            <Button @click="openLoginModal" class="w-full gap-2">
-              <LogIn class="h-4 w-4" />
-              เข้าสู่ระบบ
-            </Button>
-            <a href="/" class="text-sm text-gray-500 hover:text-gray-700 transition">
-              กลับไปหน้าหลัก
-            </a>
-          </div>
-        </CardContent>
-      </Card>
-    </div>
   </div>
 </template>
 
@@ -492,7 +461,7 @@ import {
   Package, Boxes, ArrowDownCircle, ArrowUpCircle, AlertTriangle,
   XCircle, Activity, BadgeDollarSign, TrendingUp, BarChart3,
   PieChart as PieChartIcon, Clock, Filter, Calendar, Building2,
-  RefreshCw, Lock, LogIn, CheckCircle2
+  RefreshCw, CheckCircle2
 } from 'lucide-vue-next';
 import { Line, Bar, Doughnut } from 'vue-chartjs';
 import {
@@ -1049,10 +1018,6 @@ async function fetchData() {
 
 async function refreshData() {
   await fetchData();
-}
-
-function openLoginModal() {
-  window.dispatchEvent(new Event('open-login-modal'));
 }
 
 // Auth handling

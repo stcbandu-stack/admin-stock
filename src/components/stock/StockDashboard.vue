@@ -1,7 +1,26 @@
 <template>
   <div>
-    <!-- Add Button (Admin Only) -->
-    <div v-if="currentUser" class="mb-6 flex justify-end">
+    <!-- Admin Controls -->
+    <div v-if="currentUser" class="mb-6 flex justify-between items-center">
+      <!-- Edit Mode Toggle -->
+      <div>
+        <button 
+          v-if="!editMode"
+          @click="editMode = true" 
+          class="bg-amber-500 text-white px-4 py-2 rounded hover:bg-amber-600 shadow-lg flex items-center gap-2 transition"
+        >
+          <i class="fa-solid fa-pen-to-square"></i> เข้าสู่โหมดแก้ไข
+        </button>
+        <button 
+          v-else
+          @click="editMode = false" 
+          class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 shadow-lg flex items-center gap-2 transition"
+        >
+          <i class="fa-solid fa-check"></i> เสร็จสิ้นการแก้ไข
+        </button>
+      </div>
+      
+      <!-- Add Button -->
       <button 
         @click="modals.add = true" 
         class="bg-black text-white px-4 py-2 rounded hover:bg-gray-800 shadow-lg flex items-center gap-2"
@@ -59,6 +78,7 @@
         :key="item.id" 
         :item="item"
         :is-logged-in="!!currentUser"
+        :edit-mode="editMode"
         @restock="openAction(item, 'RESTOCK')"
         @withdraw="openAction(item, 'WITHDRAW')"
         @edit="openEditModal(item)"
@@ -88,6 +108,7 @@
               :key="item.id" 
               :item="item"
               :is-logged-in="!!currentUser"
+              :edit-mode="editMode"
               @restock="openAction(item, 'RESTOCK')"
               @withdraw="openAction(item, 'WITHDRAW')"
               @edit="openEditModal(item)"
@@ -204,6 +225,7 @@ const loading = ref(false);
 const isProcessing = ref(false);
 const viewMode = ref<'grid' | 'list'>('grid');
 const searchTerm = ref('');
+const editMode = ref(false);
 
 const items = ref<StockItem[]>([]);
 const selectedItem = ref<StockItem | null>(null);

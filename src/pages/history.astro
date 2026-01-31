@@ -1,20 +1,21 @@
 ---
 import MainLayout from '@/layouts/MainLayout.astro';
 import Navbar from '@/components/common/Navbar.vue';
-import LoginModal from '@/components/auth/LoginModal.vue';
+import AuthGuard from '@/components/auth/AuthGuard.vue';
 import Toast from '@/components/common/Toast.vue';
 import HistoryTable from '@/components/history/HistoryTable.vue';
 ---
 
 <MainLayout title="ประวัติการทำรายการ - ระบบสต็อค">
   <div id="app">
-    <Navbar client:only="vue" currentPath="/history" />
+    <AuthGuard client:only="vue">
+      <Navbar client:only="vue" currentPath="/history" />
+      
+      <div class="max-w-6xl mx-auto p-6">
+        <HistoryTable client:only="vue" />
+      </div>
+    </AuthGuard>
     
-    <div class="max-w-6xl mx-auto p-6">
-      <HistoryTable client:only="vue" />
-    </div>
-    
-    <LoginModal client:only="vue" />
     <Toast client:only="vue" />
   </div>
 </MainLayout>
