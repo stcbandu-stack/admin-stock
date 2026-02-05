@@ -4,13 +4,30 @@
     <div v-if="currentUser" class="mb-6 flex justify-between items-center">
       <h2 class="text-xl font-bold border-l-4 border-red-600 pl-3">ของส่งมอบ</h2>
       
-      <!-- Create Box Button -->
-      <button 
-        @click="modals.createBox = true" 
-        class="bg-black text-white px-4 py-2 rounded hover:bg-gray-800 shadow-lg flex items-center gap-2"
-      >
-        <i class="fa-solid fa-plus"></i> สร้างรายการ
-      </button>
+      <div class="flex items-center gap-2">
+        <!-- Edit Mode Toggle Button -->
+        <button 
+          @click="isEditMode = !isEditMode" 
+          :class="[
+            'px-4 py-2 rounded shadow-lg flex items-center gap-2 transition-colors',
+            isEditMode 
+              ? 'bg-amber-500 text-white hover:bg-amber-600' 
+              : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+          ]"
+        >
+          <i :class="isEditMode ? 'fa-solid fa-lock-open' : 'fa-solid fa-lock'"></i>
+          {{ isEditMode ? 'กำลังแก้ไข' : 'แก้ไขหน้า' }}
+        </button>
+        
+        <!-- Create Box Button -->
+        <button 
+          v-if="isEditMode"
+          @click="modals.createBox = true" 
+          class="bg-black text-white px-4 py-2 rounded hover:bg-gray-800 shadow-lg flex items-center gap-2"
+        >
+          <i class="fa-solid fa-plus"></i> สร้างรายการ
+        </button>
+      </div>
     </div>
 
     <!-- Guest Message -->
@@ -38,89 +55,100 @@
     </div>
 
     <!-- Boxes List (Drag & Drop) -->
-    <div v-else class="space-y-6">
-      <TransitionGroup name="box-list" tag="div" class="space-y-6">
+    <div v-else>
+      <TransitionGroup name="box-list" tag="div" class="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <div 
           v-for="(box, boxIndex) in boxes" 
           :key="box.id"
-          :draggable="currentUser ? true : false"
+          :draggable="currentUser && isEditMode ? true : false"
           @dragstart="onBoxDragStart($event, boxIndex)"
           @dragover.prevent="onBoxDragOver($event, boxIndex)"
           @drop="onBoxDrop($event, boxIndex)"
           @dragend="onBoxDragEnd"
           :class="[
-            'bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden transition-all duration-200',
+            'bg-white rounded-xl shadow-sm overflow-hidden transition-all duration-200',
             draggingBoxIndex === boxIndex ? 'opacity-50 scale-[0.98]' : '',
-            boxDragOverIndex === boxIndex && draggingBoxIndex !== boxIndex ? 'border-red-400 border-2' : '',
-            currentUser ? 'cursor-grab' : ''
+            boxDragOverIndex === boxIndex && draggingBoxIndex !== boxIndex ? 'ring-2 ring-offset-2' : '',
+            currentUser && isEditMode ? 'cursor-grab' : ''
           ]"
+          :style="{
+            border: `2px solid ${box.header_color || '#e5e7eb'}`
+          }"
         >
           <!-- Box Header -->
-          <div class="bg-gray-50 p-4 flex justify-between items-start border-b border-gray-100">
-            <div class="flex items-start gap-3">
-              <i v-if="currentUser" class="fa-solid fa-grip-vertical text-gray-400 mt-1 cursor-grab"></i>
+          <div 
+            class="p-3 flex justify-between items-start"
+            :style="{
+              backgroundColor: box.header_color || '#f9fafb',
+              borderBottom: `2px solid ${box.header_color || '#f3f4f6'}`
+            }"
+          >
+            <div class="flex items-start gap-2">
+              <i v-if="currentUser && isEditMode" class="fa-solid fa-grip-vertical mt-0.5 cursor-grab" :style="{ color: getContrastColor(box.header_color || '#f9fafb') }"></i>
               <div>
-                <h3 class="font-bold text-lg">{{ box.name }}</h3>
-                <p v-if="box.description" class="text-gray-500 text-sm mt-1">{{ box.description }}</p>
+                <h3 class="font-bold text-base" :style="{ color: getContrastColor(box.header_color || '#f9fafb') }">{{ box.name }}</h3>
+                <p v-if="box.description" class="text-xs mt-0.5" :style="{ color: getContrastColor(box.header_color || '#f9fafb'), opacity: 0.8 }">{{ box.description }}</p>
               </div>
             </div>
             
-            <div v-if="currentUser" class="flex items-center gap-2">
+            <div v-if="currentUser && isEditMode" class="flex items-center gap-1">
               <button 
                 @click.stop="openAddItemsModal(box)"
-                class="bg-green-500 text-white px-3 py-1.5 rounded text-sm hover:bg-green-600 flex items-center gap-1"
+                class="bg-green-500 text-white px-2 py-1 rounded text-xs hover:bg-green-600 flex items-center gap-1"
               >
-                <i class="fa-solid fa-plus"></i> เพิ่มของ
+                <i class="fa-solid fa-plus"></i> เพิ่ม
               </button>
               <button 
                 @click.stop="openEditBoxModal(box)"
-                class="text-gray-500 hover:text-amber-500 p-2"
+                class="hover:bg-white/20 p-1.5 rounded" 
+                :style="{ color: getContrastColor(box.header_color || '#f9fafb') }"
               >
-                <i class="fa-solid fa-pen"></i>
+                <i class="fa-solid fa-pen text-sm"></i>
               </button>
               <button 
                 @click.stop="confirmDeleteBox(box)"
-                class="text-gray-500 hover:text-red-500 p-2"
+                class="hover:bg-white/20 p-1.5 rounded"
+                :style="{ color: getContrastColor(box.header_color || '#f9fafb') }"
               >
-                <i class="fa-solid fa-trash"></i>
+                <i class="fa-solid fa-trash text-sm"></i>
               </button>
             </div>
           </div>
           
           <!-- Box Items -->
-          <div class="p-4">
-            <div v-if="!box.items || box.items.length === 0" class="text-center py-8 text-gray-400">
-              <i class="fa-solid fa-inbox text-3xl mb-2"></i>
-              <p class="text-sm">ยังไม่มีรายการ</p>
+          <div class="p-3">
+            <div v-if="!box.items || box.items.length === 0" class="text-center py-6 text-gray-400">
+              <i class="fa-solid fa-inbox text-2xl mb-2"></i>
+              <p class="text-xs">ยังไม่มีรายการ</p>
             </div>
             
-            <TransitionGroup v-else name="item-list" tag="div" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+            <TransitionGroup v-else name="item-list" tag="div" class="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2">
               <div
                 v-for="(item, itemIndex) in box.items"
                 :key="item.id"
-                :draggable="currentUser ? true : false"
+                :draggable="currentUser && isEditMode ? true : false"
                 @dragstart.stop="onItemDragStart($event, boxIndex, itemIndex)"
                 @dragover.prevent.stop="onItemDragOver($event, boxIndex, itemIndex)"
                 @drop.stop="onItemDrop($event, boxIndex, itemIndex)"
                 @dragend="onItemDragEnd"
                 :class="[
-                  'relative bg-gray-50 rounded-lg p-3 border border-gray-200 transition-all duration-200',
+                  'relative bg-gray-50 rounded-lg p-2 border border-gray-200 transition-all duration-200',
                   draggingItem?.boxIndex === boxIndex && draggingItem?.itemIndex === itemIndex ? 'opacity-50 scale-95' : '',
                   itemDragOver?.boxIndex === boxIndex && itemDragOver?.itemIndex === itemIndex ? 'border-red-400 border-2' : '',
-                  currentUser ? 'cursor-grab hover:shadow-md' : ''
+                  currentUser && isEditMode ? 'cursor-grab hover:shadow-md' : ''
                 ]"
               >
                 <!-- Delete Item Button -->
                 <button 
-                  v-if="currentUser"
+                  v-if="currentUser && isEditMode"
                   @click.stop="removeItemFromBox(box.id, item.id)"
-                  class="absolute -top-2 -right-2 bg-red-500 text-white w-6 h-6 rounded-full text-xs hover:bg-red-600 shadow-lg z-10"
+                  class="absolute -top-1.5 -right-1.5 bg-red-500 text-white w-5 h-5 rounded-full text-xs hover:bg-red-600 shadow-lg z-10 flex items-center justify-center"
                 >
-                  <i class="fa-solid fa-times"></i>
+                  <i class="fa-solid fa-times text-[10px]"></i>
                 </button>
                 
-                <!-- Item Image -->
-                <div class="aspect-square bg-gray-200 rounded-lg overflow-hidden mb-2">
+                <!-- Item Image (smaller) -->
+                <div class="aspect-square bg-gray-200 rounded overflow-hidden mb-1.5">
                   <img 
                     v-if="item.items?.image_url" 
                     :src="item.items.image_url" 
@@ -128,18 +156,35 @@
                     class="w-full h-full object-cover"
                   >
                   <div v-else class="w-full h-full flex items-center justify-center text-gray-400">
-                    <i class="fa-solid fa-image text-2xl"></i>
+                    <i class="fa-solid fa-image text-lg"></i>
                   </div>
                 </div>
                 
-                <!-- Item Info -->
-                <h4 class="font-medium text-sm truncate" :title="item.items?.name">{{ item.items?.name }}</h4>
-                <p class="text-xs text-gray-500">
-                  คงเหลือ: 
-                  <span :class="item.items?.quantity > 0 ? 'text-green-600 font-bold' : 'text-red-600 font-bold'">
+                <!-- Item Info (compact) -->
+                <h4 class="font-medium text-xs truncate" :title="item.items?.name">{{ item.items?.name }}</h4>
+                
+                <!-- Quantity Badge + Withdraw Button -->
+                <div class="mt-1.5 flex items-center gap-1">
+                  <span 
+                    :class="[
+                      'inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-bold flex-1',
+                      item.items?.quantity > 0 
+                        ? 'bg-green-100 text-green-700' 
+                        : 'bg-red-100 text-red-700'
+                    ]"
+                  >
                     {{ item.items?.quantity }}
-                  </span> ชิ้น
-                </p>
+                  </span>
+                  <!-- Withdraw Button -->
+                  <button 
+                    v-if="currentUser && item.items?.quantity > 0"
+                    @click.stop="openWithdrawModal(item.items)"
+                    class="bg-amber-500 text-white px-1.5 py-0.5 rounded text-xs hover:bg-amber-600 flex items-center gap-0.5"
+                    title="เบิก"
+                  >
+                    <i class="fa-solid fa-arrow-right-from-bracket text-[10px]"></i>
+                  </button>
+                </div>
               </div>
             </TransitionGroup>
           </div>
@@ -162,6 +207,35 @@
           rows="3"
           class="w-full border p-2 rounded focus:border-red-600 outline-none resize-none"
         ></textarea>
+        
+        <!-- Color Picker -->
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-2">
+            <i class="fa-solid fa-palette mr-1"></i> สีกล่อง
+          </label>
+          <div class="flex flex-wrap gap-2">
+            <button
+              v-for="color in colorOptions"
+              :key="color.value"
+              type="button"
+              @click="createBoxForm.headerColor = color.value"
+              :class="[
+                'w-8 h-8 rounded-lg border-2 transition-all',
+                createBoxForm.headerColor === color.value ? 'ring-2 ring-offset-2 ring-gray-400 scale-110' : 'hover:scale-105'
+              ]"
+              :style="{ backgroundColor: color.value, borderColor: color.value }"
+              :title="color.name"
+            ></button>
+          </div>
+          <div class="mt-2 flex items-center gap-2">
+            <span class="text-sm text-gray-500">สีที่เลือก:</span>
+            <div 
+              class="w-6 h-6 rounded border"
+              :style="{ backgroundColor: createBoxForm.headerColor }"
+            ></div>
+            <span class="text-xs text-gray-400">{{ createBoxForm.headerColor }}</span>
+          </div>
+        </div>
       </div>
       
       <template #footer>
@@ -195,6 +269,35 @@
           rows="3"
           class="w-full border p-2 rounded focus:border-red-600 outline-none resize-none"
         ></textarea>
+        
+        <!-- Color Picker -->
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-2">
+            <i class="fa-solid fa-palette mr-1"></i> สีกล่อง
+          </label>
+          <div class="flex flex-wrap gap-2">
+            <button
+              v-for="color in colorOptions"
+              :key="color.value"
+              type="button"
+              @click="editBoxForm.headerColor = color.value"
+              :class="[
+                'w-8 h-8 rounded-lg border-2 transition-all',
+                editBoxForm.headerColor === color.value ? 'ring-2 ring-offset-2 ring-gray-400 scale-110' : 'hover:scale-105'
+              ]"
+              :style="{ backgroundColor: color.value, borderColor: color.value }"
+              :title="color.name"
+            ></button>
+          </div>
+          <div class="mt-2 flex items-center gap-2">
+            <span class="text-sm text-gray-500">สีที่เลือก:</span>
+            <div 
+              class="w-6 h-6 rounded border"
+              :style="{ backgroundColor: editBoxForm.headerColor }"
+            ></div>
+            <span class="text-xs text-gray-400">{{ editBoxForm.headerColor }}</span>
+          </div>
+        </div>
       </div>
       
       <template #footer>
@@ -350,6 +453,15 @@
         </div>
       </template>
     </Modal>
+
+    <!-- Action Modal (Withdraw) -->
+    <ActionModal 
+      v-model="modals.action" 
+      :is-processing="isProcessing"
+      :item="selectedStockItem"
+      :action-type="actionType"
+      @submit="submitAction"
+    />
   </div>
 </template>
 
@@ -357,12 +469,14 @@
 import { ref, reactive, computed, onMounted, onUnmounted } from 'vue';
 import { supabase, type User } from '@/lib/supabase';
 import Modal from '@/components/common/Modal.vue';
-import type { DeliveryBox, DeliveryItemWithDetails, StockItem } from '@/components/stock/types';
+import ActionModal from '@/components/stock/modals/ActionModal.vue';
+import type { DeliveryBox, DeliveryItemWithDetails, StockItem, ActionForm } from '@/components/stock/types';
 
 // State
 const currentUser = ref<User | null>(null);
 const loading = ref(true);
 const isProcessing = ref(false);
+const isEditMode = ref(false); // โหมดแก้ไข - ต้องเปิดก่อนจึงจะแสดงเมนูแก้ไข
 const boxes = ref<DeliveryBox[]>([]);
 const stockItems = ref<StockItem[]>([]);
 const loadingItems = ref(false);
@@ -370,25 +484,48 @@ const itemSearch = ref('');
 const selectedItems = ref<number[]>([]);
 const selectedBoxId = ref<number | null>(null);
 
+// Withdraw Modal State
+const selectedStockItem = ref<StockItem | null>(null);
+const actionType = ref<'WITHDRAW' | 'RESTOCK' | ''>('WITHDRAW');
+
+// Color Options for Box Header
+const colorOptions = [
+  { name: 'เทา', value: '#6b7280' },
+  { name: 'แดง', value: '#ef4444' },
+  { name: 'ส้ม', value: '#f97316' },
+  { name: 'เหลือง', value: '#eab308' },
+  { name: 'เขียว', value: '#22c55e' },
+  { name: 'ฟ้า', value: '#14b8a6' },
+  { name: 'น้ำเงิน', value: '#06b6d4' },
+  { name: 'ฟ้าอ่อน', value: '#3b82f6' },
+  { name: 'ม่วง', value: '#8b5cf6' },
+  { name: 'ชมพู', value: '#ec4899' },
+  { name: 'กุหลาบ', value: '#f43f5e' },
+  { name: 'ดำ', value: '#1f2937' },
+];
+
 // Modals
 const modals = reactive({
   createBox: false,
   editBox: false,
   addItems: false,
   deleteBox: false,
-  reorderResult: false
+  reorderResult: false,
+  action: false // Modal สำหรับเบิกของ
 });
 
 // Forms
 const createBoxForm = reactive({
   name: '',
-  description: ''
+  description: '',
+  headerColor: '#6b7280' // สีเริ่มต้น
 });
 
 const editBoxForm = reactive({
   id: null as number | null,
   name: '',
-  description: ''
+  description: '',
+  headerColor: '#6b7280'
 });
 
 const boxToDelete = ref<DeliveryBox | null>(null);
@@ -499,20 +636,34 @@ async function createBox() {
       ? Math.max(...boxes.value.map(b => b.position)) + 1 
       : 0;
 
-    const { data, error } = await supabase
+    const baseData = {
+      name: createBoxForm.name.trim(),
+      description: createBoxForm.description.trim() || null,
+      position: maxPosition,
+      created_by: currentUser.value?.id
+    };
+
+    // Try with header_color first, fallback without it if column doesn't exist
+    let { data, error } = await supabase
       .from('delivery_boxes')
-      .insert({
-        name: createBoxForm.name.trim(),
-        description: createBoxForm.description.trim() || null,
-        position: maxPosition,
-        created_by: currentUser.value?.id
-      })
+      .insert({ ...baseData, header_color: createBoxForm.headerColor })
       .select()
       .single();
 
+    // If failed (possibly due to missing column), retry without header_color
+    if (error && error.message?.includes('header_color')) {
+      const result = await supabase
+        .from('delivery_boxes')
+        .insert(baseData)
+        .select()
+        .single();
+      data = result.data;
+      error = result.error;
+    }
+
     if (error) throw error;
     
-    boxes.value.push({ ...data, items: [] });
+    boxes.value.push({ ...data, header_color: createBoxForm.headerColor, items: [] });
     closeCreateBoxModal();
     showToast('สร้างรายการสำเร็จ', 'success');
   } catch (error) {
@@ -527,6 +678,7 @@ function openEditBoxModal(box: DeliveryBox) {
   editBoxForm.id = box.id;
   editBoxForm.name = box.name;
   editBoxForm.description = box.description || '';
+  editBoxForm.headerColor = box.header_color || '#6b7280';
   modals.editBox = true;
 }
 
@@ -535,13 +687,26 @@ async function updateBox() {
   
   isProcessing.value = true;
   try {
-    const { error } = await supabase
+    // Try with header_color first, fallback without it if column doesn't exist
+    const updateData: Record<string, any> = {
+      name: editBoxForm.name.trim(),
+      description: editBoxForm.description.trim() || null
+    };
+    
+    // Try to update with header_color
+    let { error } = await supabase
       .from('delivery_boxes')
-      .update({
-        name: editBoxForm.name.trim(),
-        description: editBoxForm.description.trim() || null
-      })
+      .update({ ...updateData, header_color: editBoxForm.headerColor })
       .eq('id', editBoxForm.id);
+
+    // If failed (possibly due to missing column), retry without header_color
+    if (error && error.message?.includes('header_color')) {
+      const result = await supabase
+        .from('delivery_boxes')
+        .update(updateData)
+        .eq('id', editBoxForm.id);
+      error = result.error;
+    }
 
     if (error) throw error;
     
@@ -549,6 +714,7 @@ async function updateBox() {
     if (index !== -1) {
       boxes.value[index].name = editBoxForm.name.trim();
       boxes.value[index].description = editBoxForm.description.trim() || undefined;
+      boxes.value[index].header_color = editBoxForm.headerColor;
     }
     
     modals.editBox = false;
@@ -859,6 +1025,107 @@ function closeCreateBoxModal() {
   modals.createBox = false;
   createBoxForm.name = '';
   createBoxForm.description = '';
+  createBoxForm.headerColor = '#6b7280';
+}
+
+// คำนวณสีตัวอักษรที่คอนทราสต์กับสีพื้นหลัง
+function getContrastColor(hexColor: string): string {
+  // ลบ # ออกถ้ามี
+  const color = hexColor.replace('#', '');
+  
+  // แปลงเป็น RGB
+  const r = parseInt(color.substring(0, 2), 16);
+  const g = parseInt(color.substring(2, 4), 16);
+  const b = parseInt(color.substring(4, 6), 16);
+  
+  // คำนวณค่า luminance
+  const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+  
+  // ถ้าสีสว่าง ใช้ตัวอักษรดำ ถ้าสีเข้ม ใช้ตัวอักษรขาว
+  return luminance > 0.5 ? '#1f2937' : '#ffffff';
+}
+
+// ==========================================
+// Withdraw Modal Functions
+// ==========================================
+function openWithdrawModal(item: any) {
+  if (!item) return;
+  
+  // Convert delivery item info to StockItem format
+  selectedStockItem.value = {
+    id: item.id,
+    name: item.name,
+    description: item.description || '',
+    quantity: item.quantity,
+    total_quantity: item.quantity,
+    image_url: item.image_url,
+    is_active: true
+  } as StockItem;
+  
+  actionType.value = 'WITHDRAW';
+  modals.action = true;
+}
+
+async function submitAction(form: ActionForm) {
+  if (isProcessing.value) return;
+  
+  const { itemId, type, amount, date, branch, actName, actLoc, actDate, note, userName } = form;
+  const amountNum = parseInt(amount);
+  
+  if (!amountNum || !date) {
+    showToast('กรุณากรอกข้อมูลวันที่และจำนวน', 'error');
+    return;
+  }
+  
+  if (type === 'WITHDRAW') {
+    if (!branch || !actName || !actLoc || !actDate) {
+      showToast('กรุณากรอกข้อมูลการเบิกให้ครบถ้วน', 'error');
+      return;
+    }
+  }
+  
+  isProcessing.value = true;
+  
+  try {
+    const { data: item } = await supabase.from('items').select('*').eq('id', itemId).single();
+    
+    if (!item) throw new Error('ไม่พบสินค้า');
+    
+    if (type === 'WITHDRAW' && item.quantity < amountNum) {
+      throw new Error('สต็อกไม่พอเบิก!');
+    }
+    
+    const newQty = type === 'WITHDRAW' ? item.quantity - amountNum : item.quantity + amountNum;
+    const newTotal = type === 'WITHDRAW' ? item.total_quantity : item.total_quantity + amountNum;
+    
+    await supabase.from('items').update({ quantity: newQty, total_quantity: newTotal }).eq('id', itemId);
+    
+    await supabase.from('logs').insert({
+      item_id: itemId,
+      item_name: item.name,
+      action_type: type,
+      amount: amountNum,
+      balance_after: newQty,
+      report_date: date,
+      user_name: userName || 'Admin',
+      branch: type === 'WITHDRAW' ? branch : '-',
+      note: note,
+      activity_name: type === 'WITHDRAW' ? actName : null,
+      activity_location: type === 'WITHDRAW' ? actLoc : null,
+      activity_date: type === 'WITHDRAW' ? actDate : null,
+      cost_per_unit: item.cost_per_unit || 0
+    });
+    
+    showToast('บันทึกรายการเบิกสำเร็จ', 'success');
+    modals.action = false;
+    
+    // Refresh boxes to update quantities
+    await fetchBoxes();
+  } catch (err: any) {
+    showToast(err.message || 'บันทึกไม่สำเร็จ', 'error');
+  } finally {
+    isProcessing.value = false;
+  }
 }
 
 function showToast(message: string, type: 'success' | 'error' | 'info' = 'info') {

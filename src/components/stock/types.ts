@@ -72,6 +72,7 @@ export interface DeliveryBox {
   id: number;
   name: string;
   description?: string;
+  header_color?: string; // สีของ header และ border กล่อง
   position: number;
   is_active: boolean;
   created_at?: string;

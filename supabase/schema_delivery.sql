@@ -8,12 +8,16 @@ CREATE TABLE IF NOT EXISTS delivery_boxes (
     id SERIAL PRIMARY KEY,
     name VARCHAR(255) NOT NULL,
     description TEXT,
+    header_color VARCHAR(20) DEFAULT '#6b7280', -- สีของ header และ border กล่อง
     position INTEGER DEFAULT 0, -- สำหรับ drag & drop ลำดับกล่อง
     is_active BOOLEAN DEFAULT true,
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW(),
     created_by UUID REFERENCES auth.users(id)
 );
+
+-- Migration: เพิ่ม column header_color (ถ้ายังไม่มี)
+-- ALTER TABLE delivery_boxes ADD COLUMN IF NOT EXISTS header_color VARCHAR(20) DEFAULT '#6b7280';
 
 -- Table: delivery_items (รายการของส่งมอบในแต่ละกล่อง)
 -- เก็บความสัมพันธ์ระหว่างกล่องและของชำร่วย
