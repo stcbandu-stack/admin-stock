@@ -7,11 +7,25 @@
 
     <!-- Filters -->
     <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-100 mb-6">
-      <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div class="grid grid-cols-1 md:grid-cols-5 gap-4">
+        <!-- Year Filter -->
+        <div class="relative">
+          <label class="text-xs font-bold text-gray-500 ml-1">
+            <i class="fa-solid fa-calendar text-red-600"></i> ปี (พ.ศ.)
+          </label>
+          <select 
+            v-model="filters.year" 
+            @change="loadLogs(true)" 
+            class="w-full border-2 border-gray-100 p-2 rounded-lg text-sm outline-none focus:border-red-600"
+          >
+            <option v-for="year in availableYears" :key="year.ce" :value="year.ce">{{ year.be }}</option>
+          </select>
+        </div>
+        
         <!-- Month Filter -->
         <div class="relative">
           <label class="text-xs font-bold text-gray-500 ml-1">
-            <i class="fa-solid fa-calendar-check text-red-600"></i> เลือกเดือน
+            <i class="fa-solid fa-calendar-check text-red-600"></i> เดือน
           </label>
           <select 
             v-model="filters.month" 
@@ -299,7 +313,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted, nextTick } from 'vue';
+import { ref, reactive, computed, onMounted, nextTick } from 'vue';
 import { supabase, type User } from '@/lib/supabase';
 import type { LogEntry } from '@/components/stock/types';
 
@@ -315,10 +329,35 @@ const editInput = ref<HTMLInputElement | null>(null);
 
 
 const filters = reactive({
+  year: new Date().getFullYear().toString(),
   month: '',
   branch: '',
   itemName: ''
 });
+
+// Generate available years (current year and 5 years back)
+// Display as Buddhist Era (พ.ศ.) but store as CE for database queries
+const availableYears = computed(() => {
+  const currentYear = new Date().getFullYear();
+  const years = [];
+  for (let i = 0; i <= 5; i++) {
+    const ceYear = currentYear - i;
+    const beYear = ceYear + 543; // Convert to Buddhist Era
+    years.push({
+      ce: ceYear.toString(),
+      be: beYear.toString()
+    });
+  }
+  return years;
+});
+
+// Helper function to get last day of month
+function getLastDayOfMonth(year: number, month: number): string {
+  // month is 1-12, Date constructor expects 0-11
+  // Setting day to 0 of next month gives last day of current month
+  const lastDay = new Date(year, month, 0).getDate();
+  return lastDay.toString().padStart(2, '0');
+}
 
 const pagination = reactive({
   currentPage: 0,
@@ -349,10 +388,12 @@ async function loadLogs(resetPage = false) {
   
   // Apply filters
   if (filters.month) {
-    const year = new Date().getFullYear();
+    const year = parseInt(filters.year);
+    const month = parseInt(filters.month);
+    const lastDay = getLastDayOfMonth(year, month);
     query = query
-      .gte('report_date', `${year}-${filters.month}-01`)
-      .lte('report_date', `${year}-${filters.month}-31`);
+      .gte('report_date', `${filters.year}-${filters.month}-01`)
+      .lte('report_date', `${filters.year}-${filters.month}-${lastDay}`);
   }
   if (filters.branch) {
     query = query.ilike('branch', `%${filters.branch}%`);
@@ -376,10 +417,12 @@ async function loadLogs(resetPage = false) {
       .select('*', { count: 'exact' });
     
     if (filters.month) {
-      const year = new Date().getFullYear();
+      const year = parseInt(filters.year);
+      const month = parseInt(filters.month);
+      const lastDay = getLastDayOfMonth(year, month);
       fbQuery = fbQuery
-        .gte('report_date', `${year}-${filters.month}-01`)
-        .lte('report_date', `${year}-${filters.month}-31`);
+        .gte('report_date', `${filters.year}-${filters.month}-01`)
+        .lte('report_date', `${filters.year}-${filters.month}-${lastDay}`);
     }
     if (filters.branch) {
       fbQuery = fbQuery.ilike('branch', `%${filters.branch}%`);
@@ -414,10 +457,12 @@ async function exportToCSV() {
   let query = supabase.from('logs').select('*, items(name)');
   
   if (filters.month) {
-    const year = new Date().getFullYear();
+    const year = parseInt(filters.year);
+    const month = parseInt(filters.month);
+    const lastDay = getLastDayOfMonth(year, month);
     query = query
-      .gte('report_date', `${year}-${filters.month}-01`)
-      .lte('report_date', `${year}-${filters.month}-31`);
+      .gte('report_date', `${filters.year}-${filters.month}-01`)
+      .lte('report_date', `${filters.year}-${filters.month}-${lastDay}`);
   }
   if (filters.branch) {
     query = query.ilike('branch', `%${filters.branch}%`);
@@ -431,10 +476,12 @@ async function exportToCSV() {
   if (error) {
     let fbQuery = supabase.from('logs').select('*');
     if (filters.month) {
-      const year = new Date().getFullYear();
+      const year = parseInt(filters.year);
+      const month = parseInt(filters.month);
+      const lastDay = getLastDayOfMonth(year, month);
       fbQuery = fbQuery
-        .gte('report_date', `${year}-${filters.month}-01`)
-        .lte('report_date', `${year}-${filters.month}-31`);
+        .gte('report_date', `${filters.year}-${filters.month}-01`)
+        .lte('report_date', `${filters.year}-${filters.month}-${lastDay}`);
     }
     if (filters.branch) {
       fbQuery = fbQuery.ilike('branch', `%${filters.branch}%`);
