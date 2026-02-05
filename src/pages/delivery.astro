@@ -1,0 +1,21 @@
+---
+import MainLayout from '@/layouts/MainLayout.astro';
+import Navbar from '@/components/common/Navbar.vue';
+import AuthGuard from '@/components/auth/AuthGuard.vue';
+import Toast from '@/components/common/Toast.vue';
+import DeliveryDashboard from '@/components/delivery/DeliveryDashboard.vue';
+---
+
+<MainLayout title="ของส่งมอบ - ระบบสต็อคของชำร่วย">
+  <div id="app">
+    <AuthGuard client:only="vue">
+      <Navbar client:only="vue" currentPath="/delivery" />
+      
+      <div class="max-w-6xl mx-auto p-6">
+        <DeliveryDashboard client:only="vue" />
+      </div>
+    </AuthGuard>
+    
+    <Toast client:only="vue" />
+  </div>
+</MainLayout>

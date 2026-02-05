@@ -27,6 +27,13 @@
         <span class="md:hidden">สรุป</span> 
         <span class="hidden md:inline">สรุปข้อมูล</span>
       </a>
+      <a 
+        href="/delivery" 
+        :class="['text-sm md:text-base font-bold transition', isActive('/delivery') ? 'text-black border-b-2 border-black' : 'text-gray-500 hover:text-red-600']"
+      >
+        <span class="md:hidden">ส่งมอบ</span> 
+        <span class="hidden md:inline">ของส่งมอบ</span>
+      </a>
 
       <!-- Auth Section -->
       <div v-if="currentUser">

@@ -63,3 +63,47 @@ export interface EditItemForm {
   cost: string;
   file: File | null;
 }
+
+// ===========================================
+// Delivery System Types (ของส่งมอบ)
+// ===========================================
+
+export interface DeliveryBox {
+  id: number;
+  name: string;
+  description?: string;
+  position: number;
+  is_active: boolean;
+  created_at?: string;
+  updated_at?: string;
+  created_by?: string;
+  items?: DeliveryItemWithDetails[];
+}
+
+export interface DeliveryItem {
+  id: number;
+  box_id: number;
+  item_id: number;
+  position: number;
+  created_at?: string;
+}
+
+export interface DeliveryItemWithDetails extends DeliveryItem {
+  items: {
+    id: number;
+    name: string;
+    image_url?: string;
+    quantity: number;
+    description?: string;
+  };
+}
+
+export interface CreateBoxForm {
+  name: string;
+  description: string;
+}
+
+export interface AddDeliveryItemsForm {
+  boxId: number;
+  itemIds: number[];
+}
