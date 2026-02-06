@@ -1,7 +1,7 @@
 <template>
-  <div class="bg-white border border-gray-200 rounded-lg overflow-hidden hover:shadow-xl transition-all duration-300 flex flex-col h-full">
+  <div class="bg-white border border-gray-200 rounded-lg overflow-hidden hover:shadow-xl transition-all duration-300 flex flex-col h-full dark:bg-gray-800 dark:border-gray-700 dark:hover:shadow-lg dark:hover:shadow-red-500/10">
     <!-- Image Section -->
-    <div class="w-full aspect-[4/5] bg-gray-100 relative group overflow-hidden">
+    <div class="w-full aspect-[4/5] bg-gray-100 relative group overflow-hidden dark:bg-gray-700">
       <img 
         :src="item.image_url || 'https://via.placeholder.com/300'" 
         :class="{'grayscale': item.quantity <= 0}" 
@@ -40,16 +40,16 @@
             v-model="editValue" 
             ref="editInputRef"
             type="text" 
-            class="flex-1 w-full border border-black rounded px-2 py-1 text-sm font-bold"
+            class="flex-1 w-full border border-black rounded px-2 py-1 text-sm font-bold dark:bg-gray-700 dark:text-white dark:border-gray-500"
             @keyup.enter="saveEdit"
             @keyup.esc="cancelEdit"
           >
-          <button @click="saveEdit" class="text-green-600 hover:bg-green-50 p-1 rounded"><i class="fa-solid fa-check"></i></button>
-          <button @click="cancelEdit" class="text-red-500 hover:bg-red-50 p-1 rounded"><i class="fa-solid fa-xmark"></i></button>
+          <button @click="saveEdit" class="text-green-600 hover:bg-green-50 p-1 rounded dark:hover:bg-green-900/50"><i class="fa-solid fa-check"></i></button>
+          <button @click="cancelEdit" class="text-red-500 hover:bg-red-50 p-1 rounded dark:hover:bg-red-900/50"><i class="fa-solid fa-xmark"></i></button>
         </div>
-        <h3 v-else class="font-bold text-lg text-gray-800 leading-tight flex items-start justify-between group/edit">
+        <h3 v-else class="font-bold text-lg text-gray-800 leading-tight flex items-start justify-between group/edit dark:text-white">
           <span class="line-clamp-1" :title="item.name">{{ item.name }}</span>
-          <button v-if="isLoggedIn && editMode" @click="startEdit('name')" class="text-gray-400 hover:text-black hover:scale-110 ml-2 transition">
+          <button v-if="isLoggedIn && editMode" @click="startEdit('name')" class="text-gray-400 hover:text-black hover:scale-110 ml-2 transition dark:hover:text-white">
             <i class="fa-solid fa-pen text-xs"></i>
           </button>
         </h3>
@@ -61,18 +61,18 @@
               v-model="editValue" 
               ref="editInputRef"
               type="number" 
-              class="w-24 border border-black rounded px-2 py-0.5 text-xs font-bold"
+              class="w-24 border border-black rounded px-2 py-0.5 text-xs font-bold dark:bg-gray-700 dark:text-white dark:border-gray-500"
               @keyup.enter="saveEdit"
               @keyup.esc="cancelEdit"
             >
-            <button @click="saveEdit" class="text-green-600 hover:bg-green-50 p-1 rounded"><i class="fa-solid fa-check text-xs"></i></button>
-            <button @click="cancelEdit" class="text-red-500 hover:bg-red-50 p-1 rounded"><i class="fa-solid fa-xmark text-xs"></i></button>
+            <button @click="saveEdit" class="text-green-600 hover:bg-green-50 p-1 rounded dark:hover:bg-green-900/50"><i class="fa-solid fa-check text-xs"></i></button>
+            <button @click="cancelEdit" class="text-red-500 hover:bg-red-50 p-1 rounded dark:hover:bg-red-900/50"><i class="fa-solid fa-xmark text-xs"></i></button>
           </div>
           <div v-else class="flex items-center gap-2 group/edit">
-            <span class="text-[10px] bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded font-bold border border-gray-200">
+            <span class="text-[10px] bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded font-bold border border-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:border-gray-600">
               ทุน: {{ item.cost_per_unit?.toLocaleString() || '-' }} บ.
             </span>
-            <button v-if="isLoggedIn && editMode" @click="startEdit('cost')" class="text-gray-400 hover:text-black hover:scale-110 -ml-1 transition">
+            <button v-if="isLoggedIn && editMode" @click="startEdit('cost')" class="text-gray-400 hover:text-black hover:scale-110 -ml-1 transition dark:hover:text-white">
               <i class="fa-solid fa-pen text-[9px]"></i>
             </button>
           </div>
@@ -84,20 +84,20 @@
             v-model="editValue" 
             ref="editInputRef"
             rows="2"
-            class="flex-1 w-full border border-black rounded px-2 py-1 text-xs"
+            class="flex-1 w-full border border-black rounded px-2 py-1 text-xs dark:bg-gray-700 dark:text-white dark:border-gray-500"
             @keyup.enter.ctrl="saveEdit"
             @keyup.esc="cancelEdit"
           ></textarea>
           <div class="flex flex-col gap-1">
-            <button @click="saveEdit" class="text-green-600 hover:bg-green-50 p-1 rounded"><i class="fa-solid fa-check text-xs"></i></button>
-            <button @click="cancelEdit" class="text-red-500 hover:bg-red-50 p-1 rounded"><i class="fa-solid fa-xmark text-xs"></i></button>
+            <button @click="saveEdit" class="text-green-600 hover:bg-green-50 p-1 rounded dark:hover:bg-green-900/50"><i class="fa-solid fa-check text-xs"></i></button>
+            <button @click="cancelEdit" class="text-red-500 hover:bg-red-50 p-1 rounded dark:hover:bg-red-900/50"><i class="fa-solid fa-xmark text-xs"></i></button>
           </div>
         </div>
         <div v-else class="relative group/edit">
-          <p class="text-gray-500 text-xs line-clamp-2 h-8 overflow-hidden pr-4">
+          <p class="text-gray-500 text-xs line-clamp-2 h-8 overflow-hidden pr-4 dark:text-gray-400">
             {{ item.description || '-' }}
           </p>
-          <button v-if="isLoggedIn && editMode" @click="startEdit('description')" class="absolute top-0 right-0 text-gray-400 hover:text-black hover:scale-110 transition">
+          <button v-if="isLoggedIn && editMode" @click="startEdit('description')" class="absolute top-0 right-0 text-gray-400 hover:text-black hover:scale-110 transition dark:hover:text-white">
             <i class="fa-solid fa-pen text-[9px]"></i>
           </button>
         </div>
@@ -106,32 +106,32 @@
       <!-- Stats Section -->
       <div class="mt-auto">
         <div class="grid grid-cols-3 gap-1">
-          <div class="bg-blue-50 border border-blue-100 rounded p-1.5 text-center">
-            <div class="text-[9px] text-blue-500 font-bold uppercase">รับเข้า</div>
-            <div class="text-sm font-extrabold text-blue-700">{{ item.total_quantity }}</div>
+          <div class="bg-blue-50 border border-blue-100 rounded p-1.5 text-center dark:bg-blue-900/50 dark:border-blue-800">
+            <div class="text-[9px] text-blue-500 font-bold uppercase dark:text-blue-400">รับเข้า</div>
+            <div class="text-sm font-extrabold text-blue-700 dark:text-blue-300">{{ item.total_quantity }}</div>
           </div>
-          <div class="bg-red-50 border border-red-100 rounded p-1.5 text-center">
-            <div class="text-[9px] text-red-500 font-bold uppercase">ใช้ไป</div>
-            <div class="text-sm font-extrabold text-red-700">{{ item.total_quantity - item.quantity }}</div>
+          <div class="bg-red-50 border border-red-100 rounded p-1.5 text-center dark:bg-red-900/50 dark:border-red-800">
+            <div class="text-[9px] text-red-500 font-bold uppercase dark:text-red-400">ใช้ไป</div>
+            <div class="text-sm font-extrabold text-red-700 dark:text-red-300">{{ item.total_quantity - item.quantity }}</div>
           </div>
-          <div class="bg-green-50 border border-green-100 rounded p-1.5 text-center">
-            <div class="text-[9px] text-green-600 font-bold uppercase">คงเหลือ</div>
-            <div class="text-sm font-extrabold text-green-700">{{ item.quantity }}</div>
+          <div class="bg-green-50 border border-green-100 rounded p-1.5 text-center dark:bg-green-900/50 dark:border-green-800">
+            <div class="text-[9px] text-green-600 font-bold uppercase dark:text-green-400">คงเหลือ</div>
+            <div class="text-sm font-extrabold text-green-700 dark:text-green-300">{{ item.quantity }}</div>
           </div>
         </div>
         
         <!-- Action Buttons (Admin Only) -->
         <template v-if="isLoggedIn">
-          <div class="flex gap-1 mt-3 pt-3 border-t border-gray-100">
+          <div class="flex gap-1 mt-3 pt-3 border-t border-gray-100 dark:border-gray-700">
             <button 
               @click="$emit('restock', item)" 
-              class="flex-1 py-1.5 bg-gray-100 hover:bg-gray-200 rounded text-xs font-bold flex items-center justify-center gap-1 transition"
+              class="flex-1 py-1.5 bg-gray-100 hover:bg-gray-200 rounded text-xs font-bold flex items-center justify-center gap-1 transition dark:bg-gray-700 dark:hover:bg-gray-600"
             >
-              <i class="fa-solid fa-plus text-green-600"></i> เติม
+              <i class="fa-solid fa-plus text-green-600 dark:text-green-500"></i> เติม
             </button>
             <button 
               @click="$emit('withdraw', item)" 
-              class="flex-1 py-1.5 bg-black hover:bg-gray-800 text-white rounded text-xs font-bold flex items-center justify-center gap-1 transition"
+              class="flex-1 py-1.5 bg-black hover:bg-gray-800 text-white rounded text-xs font-bold flex items-center justify-center gap-1 transition dark:bg-red-600 dark:hover:bg-red-700"
             >
               <i class="fa-solid fa-minus"></i> เบิก
             </button>
@@ -139,7 +139,7 @@
           <div class="flex gap-1 mt-1">
             <button 
               @click="$emit('delete', item)" 
-              class="w-full text-red-500 text-[10px] border border-red-500 rounded py-1 flex items-center justify-center gap-1 hover:bg-red-50 transition"
+              class="w-full text-red-500 text-[10px] border border-red-500 rounded py-1 flex items-center justify-center gap-1 hover:bg-red-50 transition dark:hover:bg-red-900/50"
             >
               <i class="fa-solid fa-trash"></i> ลบสินค้า
             </button>

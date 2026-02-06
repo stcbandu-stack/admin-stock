@@ -1,6 +1,6 @@
 <template>
-  <nav class="bg-white border-b border-gray-200 py-3 px-4 md:px-6 sticky top-0 z-20 shadow-sm flex flex-wrap justify-between items-center">
-    <h1 class="text-lg md:text-2xl font-bold text-black truncate max-w-[50%]">
+  <nav class="bg-white border-b border-gray-200 py-3 px-4 md:px-6 sticky top-0 z-20 shadow-sm flex flex-wrap justify-between items-center dark:bg-gray-800 dark:border-gray-700">
+    <h1 class="text-lg md:text-2xl font-bold text-black truncate max-w-[50%] dark:text-white">
       ระบบ<span class="hidden md:inline">จัดการ</span><span class="text-red-600">ของชำร่วย</span>
     </h1>
     
@@ -8,42 +8,47 @@
       <!-- Navigation Links -->
       <a 
         href="/" 
-        :class="['text-sm md:text-base font-bold transition', isActive('/') ? 'text-black border-b-2 border-black' : 'text-gray-500 hover:text-red-600']"
+        :class="['text-sm md:text-base font-bold transition', isActive('/') ? 'text-black dark:text-white border-b-2 border-black dark:border-white' : 'text-gray-500 hover:text-red-600 dark:hover:text-red-500']"
       >
         <i class="fa-solid fa-house md:hidden"></i> 
         <span class="hidden md:inline">หน้าหลัก</span>
       </a>
       <a 
         href="/history" 
-        :class="['text-sm md:text-base font-bold transition', isActive('/history') ? 'text-black border-b-2 border-black' : 'text-gray-500 hover:text-red-600']"
+        :class="['text-sm md:text-base font-bold transition', isActive('/history') ? 'text-black dark:text-white border-b-2 border-black dark:border-white' : 'text-gray-500 hover:text-red-600 dark:hover:text-red-500']"
       >
         <span class="md:hidden">ประวัติ</span> 
         <span class="hidden md:inline">ประวัติการทำรายการ</span>
       </a>
       <a 
         href="/summary" 
-        :class="['text-sm md:text-base font-bold transition', isActive('/summary') ? 'text-black border-b-2 border-black' : 'text-gray-500 hover:text-red-600']"
+        :class="['text-sm md:text-base font-bold transition', isActive('/summary') ? 'text-black dark:text-white border-b-2 border-black dark:border-white' : 'text-gray-500 hover:text-red-600 dark:hover:text-red-500']"
       >
         <span class="md:hidden">สรุป</span> 
         <span class="hidden md:inline">สรุปข้อมูล</span>
       </a>
       <a 
         href="/delivery" 
-        :class="['text-sm md:text-base font-bold transition', isActive('/delivery') ? 'text-black border-b-2 border-black' : 'text-gray-500 hover:text-red-600']"
+        :class="['text-sm md:text-base font-bold transition', isActive('/delivery') ? 'text-black dark:text-white border-b-2 border-black dark:border-white' : 'text-gray-500 hover:text-red-600 dark:hover:text-red-500']"
       >
         <span class="md:hidden">ส่งมอบ</span> 
         <span class="hidden md:inline">ของส่งมอบ</span>
       </a>
 
+      <!-- Dark Mode Toggle -->
+      <button @click="toggleDarkMode" class="text-gray-500 hover:text-red-600 dark:text-gray-400 dark:hover:text-red-500 transition">
+        <i :class="['fa-solid text-lg', isDarkMode ? 'fa-sun' : 'fa-moon']"></i>
+      </button>
+
       <!-- Auth Section -->
       <div v-if="currentUser">
-        <button @click="logout" class="text-red-600 font-bold flex items-center gap-1 text-sm md:text-base hover:text-red-700 transition">
+        <button @click="logout" class="text-red-600 font-bold flex items-center gap-1 text-sm md:text-base hover:text-red-700 dark:text-red-500 dark:hover:text-red-600 transition">
           <i class="fa-solid fa-right-from-bracket"></i> 
           <span class="hidden sm:inline">ออกจากระบบ</span>
         </button>
       </div>
       <div v-else>
-        <button @click="openLoginModal" class="bg-black text-white px-4 py-1.5 rounded-full text-sm flex items-center gap-1 hover:bg-gray-800 transition">
+        <button @click="openLoginModal" class="bg-black text-white px-4 py-1.5 rounded-full text-sm flex items-center gap-1 hover:bg-gray-800 dark:bg-white dark:text-black dark:hover:bg-gray-200 transition">
           <i class="fa-solid fa-user-lock"></i> 
           <span class="hidden sm:inline">Staff Login</span>
         </button>
@@ -74,9 +79,22 @@ function isActive(path: string): boolean {
   return currentPath.startsWith(path);
 }
 
+const isDarkMode = ref(false);
+
+function toggleDarkMode() {
+  isDarkMode.value = !isDarkMode.value;
+  if (isDarkMode.value) {
+    document.documentElement.classList.add('dark');
+    localStorage.setItem('darkMode', 'enabled');
+  } else {
+    document.documentElement.classList.remove('dark');
+    localStorage.setItem('darkMode', 'disabled');
+  }
+}
+
 // Auth functions
 async function checkUser() {
-  const { data: { session } } = await supabase.auth.getSession();
+  const { data: { session } = {} } = await supabase.auth.getSession();
   currentUser.value = session?.user || null;
 }
 
@@ -96,11 +114,20 @@ let authSubscription: { data: { subscription: { unsubscribe: () => void } } } | 
 onMounted(async () => {
   await checkUser();
   
+  initializeDarkMode();
+
   authSubscription = supabase.auth.onAuthStateChange((event, session) => {
     currentUser.value = session?.user || null;
     window.dispatchEvent(new CustomEvent('auth-change', { detail: { user: session?.user || null } }));
   });
 });
+
+function initializeDarkMode() {
+  if (localStorage.getItem('darkMode') === 'enabled') {
+    isDarkMode.value = true;
+    document.documentElement.classList.add('dark');
+  }
+}
 
 onUnmounted(() => {
   authSubscription?.data.subscription.unsubscribe();

@@ -7,14 +7,14 @@
         <button 
           v-if="!editMode"
           @click="editMode = true" 
-          class="bg-amber-500 text-white px-4 py-2 rounded hover:bg-amber-600 shadow-lg flex items-center gap-2 transition"
+          class="bg-amber-500 text-white px-4 py-2 rounded hover:bg-amber-600 shadow-lg flex items-center gap-2 transition dark:bg-amber-600 dark:hover:bg-amber-700"
         >
           <i class="fa-solid fa-pen-to-square"></i> เข้าสู่โหมดแก้ไข
         </button>
         <button 
           v-else
           @click="editMode = false" 
-          class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 shadow-lg flex items-center gap-2 transition"
+          class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 shadow-lg flex items-center gap-2 transition dark:bg-green-700 dark:hover:bg-green-800"
         >
           <i class="fa-solid fa-check"></i> เสร็จสิ้นการแก้ไข
         </button>
@@ -31,20 +31,20 @@
     
     <!-- Header with Search & View Toggle -->
     <div class="mb-6 flex flex-col md:flex-row justify-between items-center gap-4">
-      <h2 class="text-xl font-bold border-l-4 border-red-600 pl-3">รายการของชำร่วยทั้งหมด</h2>
+      <h2 class="text-xl font-bold border-l-4 border-red-600 pl-3 dark:text-white">รายการของชำร่วยทั้งหมด</h2>
       <div class="flex items-center gap-3 w-full md:w-auto">
         <!-- View Toggle -->
-        <div class="flex bg-white rounded-lg shadow-sm border border-gray-200 p-1">
+        <div class="flex bg-white rounded-lg shadow-sm border border-gray-200 p-1 dark:bg-gray-800 dark:border-gray-700">
           <button 
             @click="viewMode = 'grid'" 
-            :class="viewMode === 'grid' ? 'bg-black text-white shadow' : 'text-gray-500 hover:bg-gray-100'" 
+            :class="viewMode === 'grid' ? 'bg-black text-white shadow dark:bg-red-600' : 'text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-700'" 
             class="px-3 py-1.5 rounded text-sm transition"
           >
             <i class="fa-solid fa-border-all"></i>
           </button>
           <button 
             @click="viewMode = 'list'" 
-            :class="viewMode === 'list' ? 'bg-black text-white shadow' : 'text-gray-500 hover:bg-gray-100'" 
+            :class="viewMode === 'list' ? 'bg-black text-white shadow dark:bg-red-600' : 'text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-700'" 
             class="px-3 py-1.5 rounded text-sm transition"
           >
             <i class="fa-solid fa-list"></i>
@@ -57,9 +57,9 @@
             type="text" 
             v-model="searchTerm" 
             placeholder="ค้นหาของชำร่วย..." 
-            class="w-full border-2 border-gray-200 p-2 pl-10 rounded-full text-sm focus:border-red-600 outline-none transition shadow-sm"
+            class="w-full border-2 border-gray-200 p-2 pl-10 rounded-full text-sm focus:border-red-600 outline-none transition shadow-sm dark:bg-gray-800 dark:border-gray-700 dark:text-white dark:focus:border-red-500"
           >
-          <span class="absolute left-3 top-2.5 text-gray-400">
+          <span class="absolute left-3 top-2.5 text-gray-400 dark:text-gray-500">
             <i class="fa-solid fa-magnifying-glass"></i>
           </span>
         </div>
@@ -67,7 +67,7 @@
     </div>
 
     <!-- Loading State -->
-    <div v-if="loading" class="text-center py-20 text-gray-400 font-bold animate-pulse">
+    <div v-if="loading" class="text-center py-20 text-gray-400 font-bold animate-pulse dark:text-gray-500">
       กำลังโหลดข้อมูล...
     </div>
 
@@ -89,20 +89,20 @@
     </div>
 
     <!-- List View -->
-    <div v-else class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+    <div v-else class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden dark:bg-gray-800 dark:border-gray-700">
       <div class="overflow-x-auto">
         <table class="w-full text-left text-sm">
-          <thead class="bg-gray-100 text-gray-700 uppercase tracking-wider text-xs">
+          <thead class="bg-gray-100 text-gray-700 uppercase tracking-wider text-xs dark:bg-gray-900 dark:text-gray-400">
             <tr>
               <th class="p-3">สินค้า</th>
               <th class="p-3 text-right">ต้นทุน/ชิ้น</th>
-              <th class="p-3 text-center text-blue-700 bg-blue-50">รับเข้า</th>
-              <th class="p-3 text-center text-red-700 bg-red-50">ใช้ไป</th>
-              <th class="p-3 text-center text-green-700 bg-green-50">คงเหลือ</th>
+              <th class="p-3 text-center text-blue-700 bg-blue-50 dark:bg-blue-900/50 dark:text-blue-400">รับเข้า</th>
+              <th class="p-3 text-center text-red-700 bg-red-50 dark:bg-red-900/50 dark:text-red-400">ใช้ไป</th>
+              <th class="p-3 text-center text-green-700 bg-green-50 dark:bg-green-900/50 dark:text-green-400">คงเหลือ</th>
               <th v-if="currentUser" class="p-3 text-center">จัดการ</th>
             </tr>
           </thead>
-          <tbody class="divide-y divide-gray-100">
+          <tbody class="divide-y divide-gray-100 dark:divide-gray-700">
             <ItemRow 
               v-for="item in filteredItems" 
               :key="item.id" 
@@ -128,25 +128,25 @@
           type="email" 
           v-model="loginForm.email" 
           placeholder="Email" 
-          class="w-full border p-2 rounded focus:border-red-600 outline-none"
+          class="w-full border p-2 rounded focus:border-red-600 outline-none dark:bg-gray-700 dark:border-gray-600 dark:text-white"
           @keyup.enter="handleLogin"
         >
         <input 
           type="password" 
           v-model="loginForm.password" 
           placeholder="Password" 
-          class="w-full border p-2 rounded focus:border-red-600 outline-none"
+          class="w-full border p-2 rounded focus:border-red-600 outline-none dark:bg-gray-700 dark:border-gray-600 dark:text-white"
           @keyup.enter="handleLogin"
         >
       </div>
       <template #footer>
         <div class="flex justify-end gap-2">
-          <button @click="modals.login = false" class="text-gray-500 text-sm">ยกเลิก</button>
+          <button @click="modals.login = false" class="text-gray-500 text-sm dark:text-gray-400">ยกเลิก</button>
           <button 
             @click="handleLogin" 
             :disabled="isProcessing"
             :class="{'opacity-50 cursor-not-allowed': isProcessing}"
-            class="bg-black text-white px-4 py-2 rounded flex items-center gap-2"
+            class="bg-black text-white px-4 py-2 rounded flex items-center gap-2 dark:bg-red-600 dark:hover:bg-red-700"
           >
             <i v-if="isProcessing" class="fa-solid fa-spinner fa-spin"></i>
             <span>เข้าสู่ระบบ</span>
@@ -181,14 +181,14 @@
 
     <!-- Confirm Delete Modal -->
     <Modal v-model="modals.confirm" size="md">
-      <div class="text-center py-4">
+      <div class="text-center py-4 dark:text-white">
         <i class="fa-solid fa-circle-question text-6xl text-yellow-500 mb-4"></i>
         <h2 class="text-2xl font-bold mb-2">ยืนยันการลบ?</h2>
-        <p class="text-gray-500 mb-6 text-lg">{{ confirmMessage }}</p>
+        <p class="text-gray-500 mb-6 text-lg dark:text-gray-400">{{ confirmMessage }}</p>
         <div class="flex gap-3 justify-center">
           <button 
             @click="modals.confirm = false" 
-            class="px-6 py-2 bg-gray-200 rounded-lg font-bold text-gray-700"
+            class="px-6 py-2 bg-gray-200 rounded-lg font-bold text-gray-700 dark:bg-gray-700 dark:text-gray-300"
           >
             ยกเลิก
           </button>

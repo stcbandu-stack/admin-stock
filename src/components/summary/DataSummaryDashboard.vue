@@ -4,18 +4,18 @@
     <div :class="{ 'blur-sm pointer-events-none select-none': !isLoggedIn }">
       <!-- Header & Filter -->
       <div class="mb-6">
-        <Card>
+        <Card class="dark:bg-gray-800 dark:border-gray-700">
           <CardHeader class="pb-4">
             <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
               <div>
-                <CardTitle class="text-xl">สรุปข้อมูลสต็อค</CardTitle>
-                <CardDescription>ภาพรวมของชำร่วยและการเบิกจ่าย</CardDescription>
+                <CardTitle class="text-xl dark:text-white">สรุปข้อมูลสต็อค</CardTitle>
+                <CardDescription class="dark:text-gray-400">ภาพรวมของชำร่วยและการเบิกจ่าย</CardDescription>
               </div>
               <div class="flex flex-wrap items-center gap-3">
                 <!-- Period Filter -->
-                <div class="flex items-center gap-2 bg-gray-50 p-2 rounded-lg">
-                  <Calendar class="h-4 w-4 text-gray-500" />
-                  <Select v-model="selectedPeriod" class="w-36 border-0 bg-transparent">
+                <div class="flex items-center gap-2 bg-gray-50 p-2 rounded-lg dark:bg-gray-700">
+                  <Calendar class="h-4 w-4 text-gray-500 dark:text-gray-400" />
+                  <Select v-model="selectedPeriod" class="w-36 border-0 bg-transparent dark:text-white dark:bg-gray-700">
                     <option value="this_week">สัปดาห์นี้</option>
                     <option value="last_week">สัปดาห์ที่แล้ว</option>
                     <option value="this_month">เดือนนี้</option>
@@ -29,18 +29,18 @@
                   <input 
                     type="date" 
                     v-model="customStartDate"
-                    class="h-10 px-3 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900"
+                    class="h-10 px-3 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                   />
                   <span class="text-gray-400">ถึง</span>
                   <input 
                     type="date" 
                     v-model="customEndDate"
-                    class="h-10 px-3 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900"
+                    class="h-10 px-3 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                   />
                 </div>
 
                 <!-- Refresh Button -->
-                <Button variant="outline" size="icon" @click="refreshData" :disabled="loading">
+                <Button variant="outline" size="icon" @click="refreshData" :disabled="loading" class="dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700">
                   <RefreshCw :class="['h-4 w-4', { 'animate-spin': loading }]" />
                 </Button>
               </div>
@@ -52,72 +52,72 @@
       <!-- Section 1-4: Summary Cards -->
       <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-6">
         <!-- 1. จำนวนของชำร่วยทั้งหมด (นับรายการ) -->
-        <Card>
+        <Card class="dark:bg-gray-800 dark:border-gray-700">
           <CardHeader class="pb-2">
-            <CardTitle class="text-xs font-medium text-gray-500">จำนวนรายการ</CardTitle>
+            <CardTitle class="text-xs font-medium text-gray-500 dark:text-gray-400">จำนวนรายการ</CardTitle>
           </CardHeader>
           <CardContent>
-            <div class="text-2xl font-bold text-gray-900">{{ formatNumber(metrics.totalItems) }}</div>
-            <p class="text-xs text-gray-400">รายการของชำร่วย</p>
+            <div class="text-2xl font-bold text-gray-900 dark:text-white">{{ formatNumber(metrics.totalItems) }}</div>
+            <p class="text-xs text-gray-400 dark:text-gray-500">รายการของชำร่วย</p>
           </CardContent>
         </Card>
 
         <!-- 2. จำนวนคงคลังทั้งหมด (นับชิ้น) -->
-        <Card>
+        <Card class="dark:bg-gray-800 dark:border-gray-700">
           <CardHeader class="pb-2">
-            <CardTitle class="text-xs font-medium text-gray-500">คงคลังทั้งหมด</CardTitle>
+            <CardTitle class="text-xs font-medium text-gray-500 dark:text-gray-400">คงคลังทั้งหมด</CardTitle>
           </CardHeader>
           <CardContent>
-            <div class="text-2xl font-bold text-green-600">{{ formatNumber(metrics.totalStock) }}</div>
-            <p class="text-xs text-gray-400">ชิ้น</p>
+            <div class="text-2xl font-bold text-green-600 dark:text-green-500">{{ formatNumber(metrics.totalStock) }}</div>
+            <p class="text-xs text-gray-400 dark:text-gray-500">ชิ้น</p>
           </CardContent>
         </Card>
 
         <!-- 3. มูลค่าคงคลัง -->
-        <Card>
+        <Card class="dark:bg-gray-800 dark:border-gray-700">
           <CardHeader class="pb-2">
-            <CardTitle class="text-xs font-medium text-gray-500">มูลค่าคงคลัง</CardTitle>
+            <CardTitle class="text-xs font-medium text-gray-500 dark:text-gray-400">มูลค่าคงคลัง</CardTitle>
           </CardHeader>
           <CardContent>
-            <div class="text-xl font-bold text-amber-600">{{ formatCurrency(metrics.totalValue) }}</div>
-            <p class="text-xs text-gray-400">บาท</p>
+            <div class="text-xl font-bold text-amber-600 dark:text-amber-500">{{ formatCurrency(metrics.totalValue) }}</div>
+            <p class="text-xs text-gray-400 dark:text-gray-500">บาท</p>
           </CardContent>
         </Card>
 
         <!-- 4a. มูลค่ารับเข้า -->
-        <Card>
+        <Card class="dark:bg-gray-800 dark:border-gray-700">
           <CardHeader class="pb-2">
-            <CardTitle class="text-xs font-medium text-gray-500">มูลค่ารับเข้า</CardTitle>
+            <CardTitle class="text-xs font-medium text-gray-500 dark:text-gray-400">มูลค่ารับเข้า</CardTitle>
           </CardHeader>
           <CardContent>
-            <div class="text-xl font-bold text-blue-600">{{ formatCurrency(metrics.restockValue) }}</div>
-            <p class="text-xs text-gray-400">{{ formatNumber(metrics.totalRestocked) }} ชิ้น</p>
+            <div class="text-xl font-bold text-blue-600 dark:text-blue-500">{{ formatCurrency(metrics.restockValue) }}</div>
+            <p class="text-xs text-gray-400 dark:text-gray-500">{{ formatNumber(metrics.totalRestocked) }} ชิ้น</p>
           </CardContent>
         </Card>
 
         <!-- 4b. มูลค่าเบิกออก -->
-        <Card>
+        <Card class="dark:bg-gray-800 dark:border-gray-700">
           <CardHeader class="pb-2">
-            <CardTitle class="text-xs font-medium text-gray-500">มูลค่าเบิกออก</CardTitle>
+            <CardTitle class="text-xs font-medium text-gray-500 dark:text-gray-400">มูลค่าเบิกออก</CardTitle>
           </CardHeader>
           <CardContent>
-            <div class="text-xl font-bold text-red-600">{{ formatCurrency(metrics.withdrawValue) }}</div>
-            <p class="text-xs text-gray-400">{{ formatNumber(metrics.totalWithdrawn) }} ชิ้น</p>
+            <div class="text-xl font-bold text-red-600 dark:text-red-500">{{ formatCurrency(metrics.withdrawValue) }}</div>
+            <p class="text-xs text-gray-400 dark:text-gray-500">{{ formatNumber(metrics.totalWithdrawn) }} ชิ้น</p>
           </CardContent>
         </Card>
 
         <!-- Low Stock + Out of Stock Count -->
-        <Card>
+        <Card class="dark:bg-gray-800 dark:border-gray-700">
           <CardHeader class="pb-2">
-            <CardTitle class="text-xs font-medium text-gray-500">ต้องเติมสต็อค</CardTitle>
+            <CardTitle class="text-xs font-medium text-gray-500 dark:text-gray-400">ต้องเติมสต็อค</CardTitle>
           </CardHeader>
           <CardContent>
             <div class="flex items-baseline gap-2">
               <span class="text-xl font-bold text-orange-500">{{ metrics.lowStockItems }}</span>
-              <span class="text-gray-400">/</span>
+              <span class="text-gray-400 dark:text-gray-500">/</span>
               <span class="text-xl font-bold text-red-600">{{ metrics.outOfStockItems }}</span>
             </div>
-            <p class="text-xs text-gray-400">ใกล้หมด / หมดแล้ว</p>
+            <p class="text-xs text-gray-400 dark:text-gray-500">ใกล้หมด / หมดแล้ว</p>
           </CardContent>
         </Card>
       </div>
@@ -125,40 +125,40 @@
       <!-- Section 5: Low Stock & Out of Stock Tables -->
       <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
         <!-- ของใกล้หมด -->
-        <Card>
+        <Card class="dark:bg-gray-800 dark:border-gray-700">
           <CardHeader class="pb-3">
             <div class="flex items-center gap-2">
               <AlertTriangle class="h-5 w-5 text-orange-500" />
-              <CardTitle class="text-base">ของใกล้หมด</CardTitle>
+              <CardTitle class="text-base dark:text-white">ของใกล้หมด</CardTitle>
               <Badge variant="warning">{{ lowStockList.length }}</Badge>
             </div>
           </CardHeader>
           <CardContent>
             <div class="max-h-64 overflow-y-auto">
               <table class="w-full text-sm">
-                <thead class="sticky top-0 bg-white">
-                  <tr class="border-b border-gray-200">
-                    <th class="text-left py-2 px-2 font-medium text-gray-600">สินค้า</th>
-                    <th class="text-right py-2 px-2 font-medium text-gray-600">คงเหลือ</th>
+                <thead class="sticky top-0 bg-white dark:bg-gray-800">
+                  <tr class="border-b border-gray-200 dark:border-gray-700">
+                    <th class="text-left py-2 px-2 font-medium text-gray-600 dark:text-gray-300">สินค้า</th>
+                    <th class="text-right py-2 px-2 font-medium text-gray-600 dark:text-gray-300">คงเหลือ</th>
                   </tr>
                 </thead>
                 <tbody>
-                  <tr v-for="item in lowStockList" :key="item.id" class="border-b border-gray-50 hover:bg-orange-50">
+                  <tr v-for="item in lowStockList" :key="item.id" class="border-b border-gray-50 hover:bg-orange-50 dark:border-gray-700 dark:hover:bg-orange-900/20">
                     <td class="py-2 px-2">
                       <div class="flex items-center gap-2">
-                        <div class="w-8 h-8 rounded bg-gray-100 flex items-center justify-center overflow-hidden flex-shrink-0">
+                        <div class="w-8 h-8 rounded bg-gray-100 flex items-center justify-center overflow-hidden flex-shrink-0 dark:bg-gray-700">
                           <img v-if="item.image_url" :src="item.image_url" class="w-full h-full object-cover" />
                           <Package v-else class="h-4 w-4 text-gray-400" />
                         </div>
-                        <span class="truncate">{{ item.name }}</span>
+                        <span class="truncate dark:text-gray-200">{{ item.name }}</span>
                       </div>
                     </td>
                     <td class="py-2 px-2 text-right">
-                      <span class="font-bold text-orange-600">{{ item.quantity }}</span>
+                      <span class="font-bold text-orange-600 dark:text-orange-500">{{ item.quantity }}</span>
                     </td>
                   </tr>
                   <tr v-if="lowStockList.length === 0">
-                    <td colspan="2" class="py-6 text-center text-gray-400">
+                    <td colspan="2" class="py-6 text-center text-gray-400 dark:text-gray-500">
                       <CheckCircle2 class="h-8 w-8 mx-auto mb-2 text-green-500" />
                       <p class="text-sm">ไม่มีสินค้าใกล้หมด</p>
                     </td>
@@ -170,40 +170,40 @@
         </Card>
 
         <!-- ของหมดแล้ว -->
-        <Card>
+        <Card class="dark:bg-gray-800 dark:border-gray-700">
           <CardHeader class="pb-3">
             <div class="flex items-center gap-2">
               <XCircle class="h-5 w-5 text-red-500" />
-              <CardTitle class="text-base">ของหมดแล้ว</CardTitle>
+              <CardTitle class="text-base dark:text-white">ของหมดแล้ว</CardTitle>
               <Badge variant="destructive">{{ outOfStockList.length }}</Badge>
             </div>
           </CardHeader>
           <CardContent>
             <div class="max-h-64 overflow-y-auto">
               <table class="w-full text-sm">
-                <thead class="sticky top-0 bg-white">
-                  <tr class="border-b border-gray-200">
-                    <th class="text-left py-2 px-2 font-medium text-gray-600">สินค้า</th>
-                    <th class="text-right py-2 px-2 font-medium text-gray-600">เคยมี</th>
+                <thead class="sticky top-0 bg-white dark:bg-gray-800">
+                  <tr class="border-b border-gray-200 dark:border-gray-700">
+                    <th class="text-left py-2 px-2 font-medium text-gray-600 dark:text-gray-300">สินค้า</th>
+                    <th class="text-right py-2 px-2 font-medium text-gray-600 dark:text-gray-300">เคยมี</th>
                   </tr>
                 </thead>
                 <tbody>
-                  <tr v-for="item in outOfStockList" :key="item.id" class="border-b border-gray-50 hover:bg-red-50">
+                  <tr v-for="item in outOfStockList" :key="item.id" class="border-b border-gray-50 hover:bg-red-50 dark:border-gray-700 dark:hover:bg-red-900/20">
                     <td class="py-2 px-2">
                       <div class="flex items-center gap-2">
-                        <div class="w-8 h-8 rounded bg-gray-100 flex items-center justify-center overflow-hidden flex-shrink-0">
+                        <div class="w-8 h-8 rounded bg-gray-100 flex items-center justify-center overflow-hidden flex-shrink-0 dark:bg-gray-700">
                           <img v-if="item.image_url" :src="item.image_url" class="w-full h-full object-cover" />
                           <Package v-else class="h-4 w-4 text-gray-400" />
                         </div>
-                        <span class="truncate">{{ item.name }}</span>
+                        <span class="truncate dark:text-gray-200">{{ item.name }}</span>
                       </div>
                     </td>
                     <td class="py-2 px-2 text-right">
-                      <span class="text-gray-500">{{ item.total_quantity }}</span>
+                      <span class="text-gray-500 dark:text-gray-400">{{ item.total_quantity }}</span>
                     </td>
                   </tr>
                   <tr v-if="outOfStockList.length === 0">
-                    <td colspan="2" class="py-6 text-center text-gray-400">
+                    <td colspan="2" class="py-6 text-center text-gray-400 dark:text-gray-500">
                       <CheckCircle2 class="h-8 w-8 mx-auto mb-2 text-green-500" />
                       <p class="text-sm">ไม่มีสินค้าหมด</p>
                     </td>
@@ -216,12 +216,12 @@
       </div>
 
       <!-- Section 6: All Products Table with Branch Breakdown -->
-      <Card>
+      <Card class="dark:bg-gray-800 dark:border-gray-700">
         <CardHeader>
           <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
             <div>
-              <CardTitle>รายการของชำร่วยทั้งหมด</CardTitle>
-              <CardDescription>แสดงจำนวนเบิกแยกตามสาขา (ในช่วงเวลาที่เลือก)</CardDescription>
+              <CardTitle class="dark:text-white">รายการของชำร่วยทั้งหมด</CardTitle>
+              <CardDescription class="dark:text-gray-400">แสดงจำนวนเบิกแยกตามสาขา (ในช่วงเวลาที่เลือก)</CardDescription>
             </div>
             <!-- Search -->
             <div class="relative w-full md:w-64">
@@ -229,7 +229,7 @@
                 type="text" 
                 v-model="searchTerm" 
                 placeholder="ค้นหาสินค้า..." 
-                class="w-full border border-gray-200 p-2 pl-9 rounded-lg text-sm focus:border-gray-400 outline-none"
+                class="w-full border border-gray-200 p-2 pl-9 rounded-lg text-sm focus:border-gray-400 outline-none dark:bg-gray-700 dark:border-gray-600 dark:text-white"
               >
               <Search class="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
             </div>
@@ -239,104 +239,104 @@
           <div class="overflow-x-auto">
             <table class="w-full text-sm">
               <thead>
-                <tr class="border-b-2 border-gray-200 bg-gray-50">
-                  <th class="text-left py-3 px-3 font-semibold text-gray-700 w-12">รูป</th>
-                  <th class="text-left py-3 px-3 font-semibold text-gray-700 min-w-[150px]">
-                    <button @click="sortBy('name')" class="flex items-center gap-1 hover:text-gray-900">
+                <tr class="border-b-2 border-gray-200 bg-gray-50 dark:border-gray-700 dark:bg-gray-900">
+                  <th class="text-left py-3 px-3 font-semibold text-gray-700 w-12 dark:text-gray-300">รูป</th>
+                  <th class="text-left py-3 px-3 font-semibold text-gray-700 min-w-[150px] dark:text-gray-300">
+                    <button @click="sortBy('name')" class="flex items-center gap-1 hover:text-gray-900 dark:hover:text-white">
                       ชื่อสินค้า
                       <ArrowUpDown class="h-3 w-3" />
                     </button>
                   </th>
-                  <th class="text-center py-3 px-3 font-semibold text-gray-700 bg-green-50">
-                    <button @click="sortBy('quantity')" class="flex items-center justify-center gap-1 hover:text-gray-900 w-full">
+                  <th class="text-center py-3 px-3 font-semibold text-gray-700 bg-green-50 dark:bg-green-900/30 dark:text-green-400">
+                    <button @click="sortBy('quantity')" class="flex items-center justify-center gap-1 hover:text-gray-900 dark:hover:text-white w-full">
                       คงเหลือ
                       <ArrowUpDown class="h-3 w-3" />
                     </button>
                   </th>
-                  <th class="text-center py-3 px-3 font-semibold text-blue-700 bg-blue-50 min-w-[80px]">บ้านดู่</th>
-                  <th class="text-center py-3 px-3 font-semibold text-purple-700 bg-purple-50 min-w-[80px]">พาน</th>
-                  <th class="text-center py-3 px-3 font-semibold text-pink-700 bg-pink-50 min-w-[80px]">แม่สาย</th>
-                  <th class="text-center py-3 px-3 font-semibold text-orange-700 bg-orange-50 min-w-[80px]">แม่จัน</th>
-                  <th class="text-center py-3 px-3 font-semibold text-red-700 bg-red-50 min-w-[80px]">รวมเบิก</th>
+                  <th class="text-center py-3 px-3 font-semibold text-blue-700 bg-blue-50 dark:bg-blue-900/30 dark:text-blue-400 min-w-[80px]">บ้านดู่</th>
+                  <th class="text-center py-3 px-3 font-semibold text-purple-700 bg-purple-50 dark:bg-purple-900/30 dark:text-purple-400 min-w-[80px]">พาน</th>
+                  <th class="text-center py-3 px-3 font-semibold text-pink-700 bg-pink-50 dark:bg-pink-900/30 dark:text-pink-400 min-w-[80px]">แม่สาย</th>
+                  <th class="text-center py-3 px-3 font-semibold text-orange-700 bg-orange-50 dark:bg-orange-900/30 dark:text-orange-400 min-w-[80px]">แม่จัน</th>
+                  <th class="text-center py-3 px-3 font-semibold text-red-700 bg-red-50 dark:bg-red-900/30 dark:text-red-400 min-w-[80px]">รวมเบิก</th>
                 </tr>
               </thead>
               <tbody>
                 <tr 
                   v-for="item in paginatedItems" 
                   :key="item.id" 
-                  class="border-b border-gray-100 hover:bg-gray-50 transition"
+                  class="border-b border-gray-100 hover:bg-gray-50 transition dark:border-gray-700 dark:hover:bg-gray-700/50"
                 >
                   <td class="py-2 px-3">
-                    <div class="w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center overflow-hidden">
+                    <div class="w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center overflow-hidden dark:bg-gray-700">
                       <img v-if="item.image_url" :src="item.image_url" :alt="item.name" class="w-full h-full object-cover" />
                       <Package v-else class="h-5 w-5 text-gray-400" />
                     </div>
                   </td>
                   <td class="py-2 px-3">
-                    <p class="font-medium">{{ item.name }}</p>
-                    <p v-if="item.description" class="text-xs text-gray-400 truncate max-w-[200px]">{{ item.description }}</p>
+                    <p class="font-medium dark:text-white">{{ item.name }}</p>
+                    <p v-if="item.description" class="text-xs text-gray-400 truncate max-w-[200px] dark:text-gray-500">{{ item.description }}</p>
                   </td>
-                  <td class="py-2 px-3 text-center bg-green-50/50">
+                  <td class="py-2 px-3 text-center bg-green-50/50 dark:bg-green-900/20">
                     <span 
                       :class="[
                         'font-bold',
-                        item.quantity === 0 ? 'text-red-600' : item.quantity < 10 ? 'text-orange-600' : 'text-green-600'
+                        item.quantity === 0 ? 'text-red-600 dark:text-red-500' : item.quantity < 10 ? 'text-orange-600 dark:text-orange-500' : 'text-green-600 dark:text-green-500'
                       ]"
                     >
                       {{ formatNumber(item.quantity) }}
                     </span>
                   </td>
-                  <td class="py-2 px-3 text-center bg-blue-50/30">
-                    <span :class="getBranchWithdrawAmount(item.id, 'บ้านดู่') > 0 ? 'font-semibold text-blue-700' : 'text-gray-300'">
+                  <td class="py-2 px-3 text-center bg-blue-50/30 dark:bg-blue-900/20">
+                    <span :class="getBranchWithdrawAmount(item.id, 'บ้านดู่') > 0 ? 'font-semibold text-blue-700 dark:text-blue-400' : 'text-gray-300 dark:text-gray-600'">
                       {{ getBranchWithdrawAmount(item.id, 'บ้านดู่') || '-' }}
                     </span>
                   </td>
-                  <td class="py-2 px-3 text-center bg-purple-50/30">
-                    <span :class="getBranchWithdrawAmount(item.id, 'พาน') > 0 ? 'font-semibold text-purple-700' : 'text-gray-300'">
+                  <td class="py-2 px-3 text-center bg-purple-50/30 dark:bg-purple-900/20">
+                    <span :class="getBranchWithdrawAmount(item.id, 'พาน') > 0 ? 'font-semibold text-purple-700 dark:text-purple-400' : 'text-gray-300 dark:text-gray-600'">
                       {{ getBranchWithdrawAmount(item.id, 'พาน') || '-' }}
                     </span>
                   </td>
-                  <td class="py-2 px-3 text-center bg-pink-50/30">
-                    <span :class="getBranchWithdrawAmount(item.id, 'แม่สาย') > 0 ? 'font-semibold text-pink-700' : 'text-gray-300'">
+                  <td class="py-2 px-3 text-center bg-pink-50/30 dark:bg-pink-900/20">
+                    <span :class="getBranchWithdrawAmount(item.id, 'แม่สาย') > 0 ? 'font-semibold text-pink-700 dark:text-pink-400' : 'text-gray-300 dark:text-gray-600'">
                       {{ getBranchWithdrawAmount(item.id, 'แม่สาย') || '-' }}
                     </span>
                   </td>
-                  <td class="py-2 px-3 text-center bg-orange-50/30">
-                    <span :class="getBranchWithdrawAmount(item.id, 'แม่จัน') > 0 ? 'font-semibold text-orange-700' : 'text-gray-300'">
+                  <td class="py-2 px-3 text-center bg-orange-50/30 dark:bg-orange-900/20">
+                    <span :class="getBranchWithdrawAmount(item.id, 'แม่จัน') > 0 ? 'font-semibold text-orange-700 dark:text-orange-400' : 'text-gray-300 dark:text-gray-600'">
                       {{ getBranchWithdrawAmount(item.id, 'แม่จัน') || '-' }}
                     </span>
                   </td>
-                  <td class="py-2 px-3 text-center bg-red-50/50">
-                    <span class="font-bold text-red-600">
+                  <td class="py-2 px-3 text-center bg-red-50/50 dark:bg-red-900/20">
+                    <span class="font-bold text-red-600 dark:text-red-500">
                       {{ getTotalWithdrawForItem(item.id) || '-' }}
                     </span>
                   </td>
                 </tr>
                 <tr v-if="filteredItems.length === 0">
-                  <td colspan="8" class="py-8 text-center text-gray-400">
+                  <td colspan="8" class="py-8 text-center text-gray-400 dark:text-gray-500">
                     <Package class="h-10 w-10 mx-auto mb-2 opacity-50" />
                     <p>ไม่พบรายการที่ค้นหา</p>
                   </td>
                 </tr>
               </tbody>
               <!-- Summary Footer -->
-              <tfoot class="bg-gray-100 font-semibold">
+              <tfoot class="bg-gray-100 font-semibold dark:bg-gray-900/50">
                 <tr>
-                  <td colspan="2" class="py-3 px-3 text-gray-700">รวมทั้งหมด</td>
-                  <td class="py-3 px-3 text-center text-green-700 bg-green-100">{{ formatNumber(metrics.totalStock) }}</td>
-                  <td class="py-3 px-3 text-center text-blue-700 bg-blue-100">{{ formatNumber(branchTotals['บ้านดู่'] || 0) }}</td>
-                  <td class="py-3 px-3 text-center text-purple-700 bg-purple-100">{{ formatNumber(branchTotals['พาน'] || 0) }}</td>
-                  <td class="py-3 px-3 text-center text-pink-700 bg-pink-100">{{ formatNumber(branchTotals['แม่สาย'] || 0) }}</td>
-                  <td class="py-3 px-3 text-center text-orange-700 bg-orange-100">{{ formatNumber(branchTotals['แม่จัน'] || 0) }}</td>
-                  <td class="py-3 px-3 text-center text-red-700 bg-red-100">{{ formatNumber(metrics.totalWithdrawn) }}</td>
+                  <td colspan="2" class="py-3 px-3 text-gray-700 dark:text-gray-300">รวมทั้งหมด</td>
+                  <td class="py-3 px-3 text-center text-green-700 bg-green-100 dark:bg-green-900/50 dark:text-green-400">{{ formatNumber(metrics.totalStock) }}</td>
+                  <td class="py-3 px-3 text-center text-blue-700 bg-blue-100 dark:bg-blue-900/50 dark:text-blue-400">{{ formatNumber(branchTotals['บ้านดู่'] || 0) }}</td>
+                  <td class="py-3 px-3 text-center text-purple-700 bg-purple-100 dark:bg-purple-900/50 dark:text-purple-400">{{ formatNumber(branchTotals['พาน'] || 0) }}</td>
+                  <td class="py-3 px-3 text-center text-pink-700 bg-pink-100 dark:bg-pink-900/50 dark:text-pink-400">{{ formatNumber(branchTotals['แม่สาย'] || 0) }}</td>
+                  <td class="py-3 px-3 text-center text-orange-700 bg-orange-100 dark:bg-orange-900/50 dark:text-orange-400">{{ formatNumber(branchTotals['แม่จัน'] || 0) }}</td>
+                  <td class="py-3 px-3 text-center text-red-700 bg-red-100 dark:bg-red-900/50 dark:text-red-400">{{ formatNumber(metrics.totalWithdrawn) }}</td>
                 </tr>
               </tfoot>
             </table>
           </div>
 
           <!-- Pagination -->
-          <div v-if="totalPages > 1" class="flex items-center justify-between mt-4 pt-4 border-t border-gray-100">
-            <p class="text-sm text-gray-500">
+          <div v-if="totalPages > 1" class="flex items-center justify-between mt-4 pt-4 border-t border-gray-100 dark:border-gray-700">
+            <p class="text-sm text-gray-500 dark:text-gray-400">
               แสดง {{ (currentPage - 1) * itemsPerPage + 1 }} - {{ Math.min(currentPage * itemsPerPage, filteredItems.length) }} 
               จาก {{ filteredItems.length }} รายการ
             </p>
@@ -346,15 +346,17 @@
                 size="sm" 
                 :disabled="currentPage === 1"
                 @click="currentPage--"
+                class="dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"
               >
                 <ChevronLeft class="h-4 w-4" />
               </Button>
-              <span class="text-sm text-gray-600">หน้า {{ currentPage }} / {{ totalPages }}</span>
+              <span class="text-sm text-gray-600 dark:text-gray-400">หน้า {{ currentPage }} / {{ totalPages }}</span>
               <Button 
                 variant="outline" 
                 size="sm" 
                 :disabled="currentPage === totalPages"
                 @click="currentPage++"
+                class="dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"
               >
                 <ChevronRight class="h-4 w-4" />
               </Button>
@@ -374,7 +376,7 @@ import {
   Card, CardHeader, CardTitle, CardDescription, CardContent, 
   Button, Select, Badge 
 } from '@/components/ui';
-import {
+import { 
   Package, AlertTriangle, XCircle, Calendar, RefreshCw, CheckCircle2,
   Search, ArrowUpDown, ChevronLeft, ChevronRight
 } from 'lucide-vue-next';

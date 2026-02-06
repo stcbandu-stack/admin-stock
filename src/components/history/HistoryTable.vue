@@ -2,21 +2,21 @@
   <div>
     <!-- Header -->
     <div class="flex justify-between items-center mb-6">
-      <h2 class="text-2xl font-bold border-l-4 border-red-600 pl-3">ประวัติการทำรายการ</h2>
+      <h2 class="text-2xl font-bold border-l-4 border-red-600 pl-3 dark:text-white">ประวัติการทำรายการ</h2>
     </div>
 
     <!-- Filters -->
-    <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-100 mb-6">
+    <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-100 mb-6 dark:bg-gray-800 dark:border-gray-700">
       <div class="grid grid-cols-1 md:grid-cols-5 gap-4">
         <!-- Year Filter -->
         <div class="relative">
-          <label class="text-xs font-bold text-gray-500 ml-1">
+          <label class="text-xs font-bold text-gray-500 ml-1 dark:text-gray-400">
             <i class="fa-solid fa-calendar text-red-600"></i> ปี (พ.ศ.)
           </label>
           <select 
             v-model="filters.year" 
             @change="loadLogs(true)" 
-            class="w-full border-2 border-gray-100 p-2 rounded-lg text-sm outline-none focus:border-red-600"
+            class="w-full border-2 border-gray-100 p-2 rounded-lg text-sm outline-none focus:border-red-600 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
           >
             <option v-for="year in availableYears" :key="year.ce" :value="year.ce">{{ year.be }}</option>
           </select>
@@ -24,13 +24,13 @@
         
         <!-- Month Filter -->
         <div class="relative">
-          <label class="text-xs font-bold text-gray-500 ml-1">
+          <label class="text-xs font-bold text-gray-500 ml-1 dark:text-gray-400">
             <i class="fa-solid fa-calendar-check text-red-600"></i> เดือน
           </label>
           <select 
             v-model="filters.month" 
             @change="loadLogs(true)" 
-            class="w-full border-2 border-gray-100 p-2 rounded-lg text-sm outline-none focus:border-red-600"
+            class="w-full border-2 border-gray-100 p-2 rounded-lg text-sm outline-none focus:border-red-600 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
           >
             <option value="">ทั้งหมดทุกเดือน</option>
             <option value="01">มกราคม</option>
@@ -50,7 +50,7 @@
         
         <!-- Item Name Filter -->
         <div class="relative">
-          <label class="text-xs font-bold text-gray-500 ml-1">
+          <label class="text-xs font-bold text-gray-500 ml-1 dark:text-gray-400">
             <i class="fa-solid fa-box text-red-600"></i> ชื่อสินค้า
           </label>
           <input 
@@ -58,13 +58,13 @@
             v-model="filters.itemName" 
             @input="debouncedLoad" 
             placeholder="พิมพ์ชื่อสินค้า..." 
-            class="w-full border-2 border-gray-100 p-2 rounded-lg text-sm outline-none focus:border-red-600"
+            class="w-full border-2 border-gray-100 p-2 rounded-lg text-sm outline-none focus:border-red-600 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
           >
         </div>
         
         <!-- Branch Filter -->
         <div class="relative">
-          <label class="text-xs font-bold text-gray-500 ml-1">
+          <label class="text-xs font-bold text-gray-500 ml-1 dark:text-gray-400">
             <i class="fa-solid fa-location-dot text-red-600"></i> สาขา
           </label>
           <input 
@@ -72,7 +72,7 @@
             v-model="filters.branch" 
             @input="debouncedLoad" 
             placeholder="พิมพ์ชื่อสาขา..." 
-            class="w-full border-2 border-gray-100 p-2 rounded-lg text-sm outline-none focus:border-red-600"
+            class="w-full border-2 border-gray-100 p-2 rounded-lg text-sm outline-none focus:border-red-600 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
           >
         </div>
         
@@ -89,11 +89,11 @@
     </div>
 
     <!-- Table -->
-    <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden dark:bg-gray-800 dark:border-gray-700">
       <div class="overflow-x-auto">
         <table class="w-full text-left text-sm">
           <thead>
-            <tr class="bg-gray-100 text-gray-700 uppercase tracking-wider">
+            <tr class="bg-gray-100 text-gray-700 uppercase tracking-wider dark:bg-gray-900 dark:text-gray-400">
               <th class="p-3">วันที่</th>
               <th class="p-3">สินค้า</th>
               <th class="p-3 text-center">ประเภท</th>
@@ -111,147 +111,147 @@
           </thead>
           <tbody>
             <tr v-if="loading">
-              <td colspan="13" class="p-10 text-center text-gray-400 animate-pulse font-bold">
+              <td colspan="13" class="p-10 text-center text-gray-400 animate-pulse font-bold dark:text-gray-500">
                 กำลังโหลดข้อมูล...
               </td>
             </tr>
             <tr v-else-if="logs.length === 0">
-              <td colspan="13" class="p-10 text-center text-gray-400 font-bold">
+              <td colspan="13" class="p-10 text-center text-gray-400 font-bold dark:text-gray-500">
                 ไม่พบข้อมูล
               </td>
             </tr>
             <tr 
               v-for="log in logs" 
               :key="log.id" 
-              class="border-b hover:bg-gray-50 text-xs md:text-sm"
+              class="border-b hover:bg-gray-50 text-xs md:text-sm dark:border-gray-700 dark:hover:bg-gray-700/50"
             >
-              <td class="p-3 text-gray-500 whitespace-nowrap">{{ formatDate(log.report_date) }}</td>
-              <td class="p-3 font-semibold text-gray-700">{{ log.items?.name || log.item_name }}</td>
+              <td class="p-3 text-gray-500 whitespace-nowrap dark:text-gray-400">{{ formatDate(log.report_date) }}</td>
+              <td class="p-3 font-semibold text-gray-700 dark:text-white">{{ log.items?.name || log.item_name }}</td>
               <td class="p-3 text-center whitespace-nowrap" v-html="getLogBadge(log.action_type)"></td>
               
               <!-- User Name -->
-              <td class="p-3 group/cell relative" @dblclick="isSuperUser && startEdit(log, 'user_name')">
+              <td class="p-3 group/cell relative dark:text-gray-300" @dblclick="isSuperUser && startEdit(log, 'user_name')">
                 <div v-if="editingCell?.id === log.id && editingCell?.field === 'user_name'" class="flex items-center gap-1">
                   <input 
                     v-model="editValue"
                     ref="editInput"
-                    class="w-full min-w-[100px] border border-black rounded px-2 py-1 text-xs"
+                    class="w-full min-w-[100px] border border-black rounded px-2 py-1 text-xs dark:bg-gray-700 dark:text-white"
                     @keyup.enter="saveEdit"
                     @keyup.esc="cancelEdit"
                   >
-                  <button @click="saveEdit" class="text-green-600 hover:bg-green-50 p-1"><i class="fa-solid fa-check text-xs"></i></button>
-                  <button @click="cancelEdit" class="text-red-500 hover:bg-red-50 p-1"><i class="fa-solid fa-xmark text-xs"></i></button>
+                  <button @click="saveEdit" class="text-green-600 hover:bg-green-50 p-1 dark:hover:bg-green-900/50"><i class="fa-solid fa-check text-xs"></i></button>
+                  <button @click="cancelEdit" class="text-red-500 hover:bg-red-50 p-1 dark:hover:bg-red-900/50"><i class="fa-solid fa-xmark text-xs"></i></button>
                 </div>
                 <div v-else class="flex items-center gap-2">
                   <span>{{ log.action_type === 'WITHDRAW' ? log.user_name : 'Admin' }}</span>
-                  <button v-if="isSuperUser && log.action_type === 'WITHDRAW'" @click="startEdit(log, 'user_name')" class="text-gray-400 hover:text-black hover:scale-110 opacity-0 group-hover/cell:opacity-100 transition">
+                  <button v-if="isSuperUser && log.action_type === 'WITHDRAW'" @click="startEdit(log, 'user_name')" class="text-gray-400 hover:text-black hover:scale-110 opacity-0 group-hover/cell:opacity-100 transition dark:hover:text-white">
                     <i class="fa-solid fa-pen text-[9px]"></i>
                   </button>
                 </div>
               </td>
 
               <!-- Branch -->
-              <td class="p-3 text-gray-600 group/cell relative" @dblclick="isSuperUser && log.action_type === 'WITHDRAW' && startEdit(log, 'branch')">
+              <td class="p-3 text-gray-600 group/cell relative dark:text-gray-400" @dblclick="isSuperUser && log.action_type === 'WITHDRAW' && startEdit(log, 'branch')">
                 <div v-if="editingCell?.id === log.id && editingCell?.field === 'branch'" class="flex items-center gap-1">
                   <input 
                     v-model="editValue"
                     ref="editInput"
-                    class="w-full min-w-[100px] border border-black rounded px-2 py-1 text-xs"
+                    class="w-full min-w-[100px] border border-black rounded px-2 py-1 text-xs dark:bg-gray-700 dark:text-white"
                     @keyup.enter="saveEdit"
                     @keyup.esc="cancelEdit"
                   >
-                  <button @click="saveEdit" class="text-green-600 hover:bg-green-50 p-1"><i class="fa-solid fa-check text-xs"></i></button>
-                  <button @click="cancelEdit" class="text-red-500 hover:bg-red-50 p-1"><i class="fa-solid fa-xmark text-xs"></i></button>
+                  <button @click="saveEdit" class="text-green-600 hover:bg-green-50 p-1 dark:hover:bg-green-900/50"><i class="fa-solid fa-check text-xs"></i></button>
+                  <button @click="cancelEdit" class="text-red-500 hover:bg-red-50 p-1 dark:hover:bg-red-900/50"><i class="fa-solid fa-xmark text-xs"></i></button>
                 </div>
                 <div v-else class="flex items-center gap-2">
                   <span v-if="log.action_type === 'WITHDRAW'">{{ log.branch }}</span>
-                  <span v-else class="text-gray-300">-</span>
-                  <button v-if="isSuperUser && log.action_type === 'WITHDRAW'" @click="startEdit(log, 'branch')" class="text-gray-400 hover:text-black hover:scale-110 opacity-0 group-hover/cell:opacity-100 transition">
+                  <span v-else class="text-gray-300 dark:text-gray-600">-</span>
+                  <button v-if="isSuperUser && log.action_type === 'WITHDRAW'" @click="startEdit(log, 'branch')" class="text-gray-400 hover:text-black hover:scale-110 opacity-0 group-hover/cell:opacity-100 transition dark:hover:text-white">
                     <i class="fa-solid fa-pen text-[9px]"></i>
                   </button>
                 </div>
               </td>
 
               <!-- Activity Name -->
-              <td class="p-3 group/cell relative" @dblclick="isSuperUser && log.action_type === 'WITHDRAW' && startEdit(log, 'activity_name')">
+              <td class="p-3 group/cell relative dark:text-gray-300" @dblclick="isSuperUser && log.action_type === 'WITHDRAW' && startEdit(log, 'activity_name')">
                 <div v-if="editingCell?.id === log.id && editingCell?.field === 'activity_name'" class="flex items-center gap-1">
                   <input 
                     v-model="editValue"
                     ref="editInput"
-                    class="w-full min-w-[100px] border border-black rounded px-2 py-1 text-xs"
+                    class="w-full min-w-[100px] border border-black rounded px-2 py-1 text-xs dark:bg-gray-700 dark:text-white"
                     @keyup.enter="saveEdit"
                     @keyup.esc="cancelEdit"
                   >
-                  <button @click="saveEdit" class="text-green-600 hover:bg-green-50 p-1"><i class="fa-solid fa-check text-xs"></i></button>
-                  <button @click="cancelEdit" class="text-red-500 hover:bg-red-50 p-1"><i class="fa-solid fa-xmark text-xs"></i></button>
+                  <button @click="saveEdit" class="text-green-600 hover:bg-green-50 p-1 dark:hover:bg-green-900/50"><i class="fa-solid fa-check text-xs"></i></button>
+                  <button @click="cancelEdit" class="text-red-500 hover:bg-red-50 p-1 dark:hover:bg-red-900/50"><i class="fa-solid fa-xmark text-xs"></i></button>
                 </div>
                 <div v-else class="flex items-center gap-2">
                   <span>{{ log.action_type === 'WITHDRAW' ? (log.activity_name || '-') : '-' }}</span>
-                  <button v-if="isSuperUser && log.action_type === 'WITHDRAW'" @click="startEdit(log, 'activity_name')" class="text-gray-400 hover:text-black hover:scale-110 opacity-0 group-hover/cell:opacity-100 transition">
+                  <button v-if="isSuperUser && log.action_type === 'WITHDRAW'" @click="startEdit(log, 'activity_name')" class="text-gray-400 hover:text-black hover:scale-110 opacity-0 group-hover/cell:opacity-100 transition dark:hover:text-white">
                     <i class="fa-solid fa-pen text-[9px]"></i>
                   </button>
                 </div>
               </td>
 
               <!-- Activity Location -->
-              <td class="p-3 text-gray-500 group/cell relative" @dblclick="isSuperUser && log.action_type === 'WITHDRAW' && startEdit(log, 'activity_location')">
+              <td class="p-3 text-gray-500 group/cell relative dark:text-gray-400" @dblclick="isSuperUser && log.action_type === 'WITHDRAW' && startEdit(log, 'activity_location')">
                 <div v-if="editingCell?.id === log.id && editingCell?.field === 'activity_location'" class="flex items-center gap-1">
                   <input 
                     v-model="editValue"
                     ref="editInput"
-                    class="w-full min-w-[100px] border border-black rounded px-2 py-1 text-xs"
+                    class="w-full min-w-[100px] border border-black rounded px-2 py-1 text-xs dark:bg-gray-700 dark:text-white"
                     @keyup.enter="saveEdit"
                     @keyup.esc="cancelEdit"
                   >
-                  <button @click="saveEdit" class="text-green-600 hover:bg-green-50 p-1"><i class="fa-solid fa-check text-xs"></i></button>
-                  <button @click="cancelEdit" class="text-red-500 hover:bg-red-50 p-1"><i class="fa-solid fa-xmark text-xs"></i></button>
+                  <button @click="saveEdit" class="text-green-600 hover:bg-green-50 p-1 dark:hover:bg-green-900/50"><i class="fa-solid fa-check text-xs"></i></button>
+                  <button @click="cancelEdit" class="text-red-500 hover:bg-red-50 p-1 dark:hover:bg-red-900/50"><i class="fa-solid fa-xmark text-xs"></i></button>
                 </div>
                 <div v-else class="flex items-center gap-2">
                   <span>{{ log.action_type === 'WITHDRAW' ? (log.activity_location || '-') : '-' }}</span>
-                  <button v-if="isSuperUser && log.action_type === 'WITHDRAW'" @click="startEdit(log, 'activity_location')" class="text-gray-400 hover:text-black hover:scale-110 opacity-0 group-hover/cell:opacity-100 transition">
+                  <button v-if="isSuperUser && log.action_type === 'WITHDRAW'" @click="startEdit(log, 'activity_location')" class="text-gray-400 hover:text-black hover:scale-110 opacity-0 group-hover/cell:opacity-100 transition dark:hover:text-white">
                     <i class="fa-solid fa-pen text-[9px]"></i>
                   </button>
                 </div>
               </td>
 
               <!-- Activity Date -->
-              <td class="p-3 text-gray-500 whitespace-nowrap group/cell relative" @dblclick="isSuperUser && log.action_type === 'WITHDRAW' && startEdit(log, 'activity_date')">
+              <td class="p-3 text-gray-500 whitespace-nowrap group/cell relative dark:text-gray-400" @dblclick="isSuperUser && log.action_type === 'WITHDRAW' && startEdit(log, 'activity_date')">
                 <div v-if="editingCell?.id === log.id && editingCell?.field === 'activity_date'" class="flex items-center gap-1">
                   <input 
                     v-model="editValue"
                     ref="editInput"
                     type="date"
-                    class="w-full border border-black rounded px-2 py-1 text-xs"
+                    class="w-full border border-black rounded px-2 py-1 text-xs dark:bg-gray-700 dark:text-white"
                     @keyup.enter="saveEdit"
                     @keyup.esc="cancelEdit"
                   >
-                  <button @click="saveEdit" class="text-green-600 hover:bg-green-50 p-1"><i class="fa-solid fa-check text-xs"></i></button>
-                  <button @click="cancelEdit" class="text-red-500 hover:bg-red-50 p-1"><i class="fa-solid fa-xmark text-xs"></i></button>
+                  <button @click="saveEdit" class="text-green-600 hover:bg-green-50 p-1 dark:hover:bg-green-900/50"><i class="fa-solid fa-check text-xs"></i></button>
+                  <button @click="cancelEdit" class="text-red-500 hover:bg-red-50 p-1 dark:hover:bg-red-900/50"><i class="fa-solid fa-xmark text-xs"></i></button>
                 </div>
                 <div v-else class="flex items-center gap-2">
                   <span>{{ log.action_type === 'WITHDRAW' ? formatDate(log.activity_date) : '-' }}</span>
-                  <button v-if="isSuperUser && log.action_type === 'WITHDRAW'" @click="startEdit(log, 'activity_date')" class="text-gray-400 hover:text-black hover:scale-110 opacity-0 group-hover/cell:opacity-100 transition">
+                  <button v-if="isSuperUser && log.action_type === 'WITHDRAW'" @click="startEdit(log, 'activity_date')" class="text-gray-400 hover:text-black hover:scale-110 opacity-0 group-hover/cell:opacity-100 transition dark:hover:text-white">
                     <i class="fa-solid fa-pen text-[9px]"></i>
                   </button>
                 </div>
               </td>
 
               <!-- Note -->
-              <td class="p-3 text-gray-400 italic group/cell relative" @dblclick="isSuperUser && startEdit(log, 'note')">
+              <td class="p-3 text-gray-400 italic group/cell relative dark:text-gray-500" @dblclick="isSuperUser && startEdit(log, 'note')">
                 <div v-if="editingCell?.id === log.id && editingCell?.field === 'note'" class="flex items-center gap-1">
                   <input 
                     v-model="editValue"
                     ref="editInput"
-                    class="w-full min-w-[150px] border border-black rounded px-2 py-1 text-xs"
+                    class="w-full min-w-[150px] border border-black rounded px-2 py-1 text-xs dark:bg-gray-700 dark:text-white"
                     @keyup.enter="saveEdit"
                     @keyup.esc="cancelEdit"
                   >
-                  <button @click="saveEdit" class="text-green-600 hover:bg-green-50 p-1"><i class="fa-solid fa-check text-xs"></i></button>
-                  <button @click="cancelEdit" class="text-red-500 hover:bg-red-50 p-1"><i class="fa-solid fa-xmark text-xs"></i></button>
+                  <button @click="saveEdit" class="text-green-600 hover:bg-green-50 p-1 dark:hover:bg-green-900/50"><i class="fa-solid fa-check text-xs"></i></button>
+                  <button @click="cancelEdit" class="text-red-500 hover:bg-red-50 p-1 dark:hover:bg-red-900/50"><i class="fa-solid fa-xmark text-xs"></i></button>
                 </div>
                 <div v-else class="flex items-center gap-2">
                   <span class="truncate max-w-[150px] inline-block">{{ log.note || '-' }}</span>
-                  <button v-if="isSuperUser" @click="startEdit(log, 'note')" class="text-gray-400 hover:text-black hover:scale-110 opacity-0 group-hover/cell:opacity-100 transition">
+                  <button v-if="isSuperUser" @click="startEdit(log, 'note')" class="text-gray-400 hover:text-black hover:scale-110 opacity-0 group-hover/cell:opacity-100 transition dark:hover:text-white">
                     <i class="fa-solid fa-pen text-[9px]"></i>
                   </button>
                 </div>
@@ -260,11 +260,11 @@
               <td class="p-3 text-right font-bold" :class="getAmountClass(log.action_type)">
                 {{ getAmountPrefix(log.action_type) }}{{ log.amount }}
               </td>
-              <td class="p-3 text-right font-mono font-bold text-blue-600 bg-blue-50">{{ log.balance_after ?? '-' }}</td>
-              <td class="p-3 text-right text-gray-500 font-mono">
+              <td class="p-3 text-right font-mono font-bold text-blue-600 bg-blue-50 dark:bg-blue-900/50 dark:text-blue-400">{{ log.balance_after ?? '-' }}</td>
+              <td class="p-3 text-right text-gray-500 font-mono dark:text-gray-400">
                 {{ log.cost_per_unit > 0 ? log.cost_per_unit.toLocaleString() : '-' }}
               </td>
-              <td class="p-3 text-right font-bold text-gray-700 font-mono">
+              <td class="p-3 text-right font-bold text-gray-700 font-mono dark:text-white">
                 {{ (log.cost_per_unit * log.amount) > 0 ? (log.cost_per_unit * log.amount).toLocaleString() : '-' }}
               </td>
             </tr>
@@ -273,8 +273,8 @@
       </div>
       
       <!-- Pagination -->
-      <div class="bg-gray-50 p-4 border-t border-gray-100 flex flex-col md:flex-row justify-between items-center gap-4">
-        <span class="text-xs text-gray-500 font-bold">
+      <div class="bg-gray-50 p-4 border-t border-gray-100 flex flex-col md:flex-row justify-between items-center gap-4 dark:bg-gray-800/50 dark:border-gray-700">
+        <span class="text-xs text-gray-500 font-bold dark:text-gray-400">
           รายการที่ {{ pagination.currentPage * pagination.pageSize + 1 }} - 
           {{ Math.min((pagination.currentPage + 1) * pagination.pageSize, pagination.totalCount) }} 
           จากทั้งหมด {{ pagination.totalCount }}
@@ -283,26 +283,26 @@
           <button 
             @click="changePage(-1)" 
             :disabled="pagination.currentPage === 0" 
-            class="w-8 h-8 flex items-center justify-center bg-white border rounded shadow-sm text-gray-400 disabled:opacity-50 hover:bg-gray-50"
+            class="w-8 h-8 flex items-center justify-center bg-white border rounded shadow-sm text-gray-400 disabled:opacity-50 hover:bg-gray-50 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-600"
           >
             <i class="fa-solid fa-chevron-left"></i>
           </button>
-          <div class="flex items-center gap-1 bg-white border rounded px-2 py-1 shadow-sm">
-            <span class="text-xs text-gray-400">หน้า</span>
+          <div class="flex items-center gap-1 bg-white border rounded px-2 py-1 shadow-sm dark:bg-gray-700 dark:border-gray-600">
+            <span class="text-xs text-gray-400 dark:text-gray-400">หน้า</span>
             <input 
               type="number" 
               :value="pagination.currentPage + 1" 
               @change="jumpToPage(($event.target as HTMLInputElement).value)" 
-              class="w-12 text-center text-sm font-bold text-gray-700 outline-none focus:text-red-600"
+              class="w-12 text-center text-sm font-bold text-gray-700 outline-none focus:text-red-600 dark:bg-transparent dark:text-white"
               min="1"
               :max="pagination.totalPages"
             >
-            <span class="text-xs text-gray-400">/ {{ pagination.totalPages }}</span>
+            <span class="text-xs text-gray-400 dark:text-gray-400">/ {{ pagination.totalPages }}</span>
           </div>
           <button 
             @click="changePage(1)" 
             :disabled="(pagination.currentPage + 1) >= pagination.totalPages" 
-            class="w-8 h-8 flex items-center justify-center bg-white border rounded shadow-sm text-gray-400 disabled:opacity-50 hover:bg-gray-50"
+            class="w-8 h-8 flex items-center justify-center bg-white border rounded shadow-sm text-gray-400 disabled:opacity-50 hover:bg-gray-50 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-600"
           >
             <i class="fa-solid fa-chevron-right"></i>
           </button>
@@ -540,15 +540,15 @@ function formatDate(dateStr: string | null | undefined): string {
 function getLogBadge(type: string): string {
   switch (type) {
     case 'WITHDRAW':
-      return `<span class="bg-red-100 text-red-700 px-2 py-1 rounded-md text-xs font-bold border border-red-200"><i class="fa-solid fa-minus"></i> เบิกออก</span>`;
+      return `<span class="bg-red-100 text-red-700 px-2 py-1 rounded-md text-xs font-bold border border-red-200 dark:bg-red-900/50 dark:text-red-400 dark:border-red-800"><i class="fa-solid fa-minus"></i> เบิกออก</span>`;
     case 'RESTOCK':
-      return `<span class="bg-green-100 text-green-700 px-2 py-1 rounded-md text-xs font-bold border border-green-200"><i class="fa-solid fa-plus"></i> เติมสต็อก</span>`;
+      return `<span class="bg-green-100 text-green-700 px-2 py-1 rounded-md text-xs font-bold border border-green-200 dark:bg-green-900/50 dark:text-green-400 dark:border-green-800"><i class="fa-solid fa-plus"></i> เติมสต็อก</span>`;
     case 'ADD_NEW':
-      return `<span class="bg-blue-100 text-blue-700 px-2 py-1 rounded-md text-xs font-bold border border-blue-200"><i class="fa-solid fa-star"></i> เพิ่มของใหม่</span>`;
+      return `<span class="bg-blue-100 text-blue-700 px-2 py-1 rounded-md text-xs font-bold border border-blue-200 dark:bg-blue-900/50 dark:text-blue-400 dark:border-blue-800"><i class="fa-solid fa-star"></i> เพิ่มของใหม่</span>`;
     case 'DELETE':
-      return `<span class="bg-gray-100 text-gray-600 px-2 py-1 rounded-md text-xs font-bold border border-gray-200"><i class="fa-solid fa-trash"></i> ลบสินค้า</span>`;
+      return `<span class="bg-gray-100 text-gray-600 px-2 py-1 rounded-md text-xs font-bold border border-gray-200 dark:bg-gray-700 dark:text-gray-400 dark:border-gray-600"><i class="fa-solid fa-trash"></i> ลบสินค้า</span>`;
     default:
-      return `<span class="bg-gray-100 text-gray-500 px-2 py-1 rounded text-xs">ทั่วไป</span>`;
+      return `<span class="bg-gray-100 text-gray-500 px-2 py-1 rounded text-xs dark:bg-gray-700 dark:text-gray-400">ทั่วไป</span>`;
   }
 }
 

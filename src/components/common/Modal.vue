@@ -7,7 +7,7 @@
         @click.self="close"
       >
         <div 
-          :class="['bg-white rounded-lg shadow-2xl', sizeClass, borderClass]"
+          :class="['bg-white rounded-lg shadow-2xl dark:bg-gray-800 dark:text-white', sizeClass, borderClass]"
           @click.stop
         >
           <!-- Header -->
@@ -64,17 +64,17 @@ const sizeClass = computed(() => {
 
 const borderClass = computed(() => {
   switch (props.variant) {
-    case 'warning': return 'border-t-4 border-yellow-500';
-    case 'danger': return 'border-t-4 border-red-500';
+    case 'warning': return 'border-t-4 border-yellow-500 dark:border-yellow-600';
+    case 'danger': return 'border-t-4 border-red-500 dark:border-red-600';
     default: return '';
   }
 });
 
 const titleClass = computed(() => {
   switch (props.variant) {
-    case 'warning': return 'text-yellow-600';
-    case 'danger': return 'text-red-600';
-    default: return '';
+    case 'warning': return 'text-yellow-600 dark:text-yellow-500';
+    case 'danger': return 'text-red-600 dark:text-red-500';
+    default: return 'dark:text-white'; // Default title color for dark mode
   }
 });
 

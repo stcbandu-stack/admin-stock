@@ -2,7 +2,7 @@
   <div>
     <!-- Admin Controls -->
     <div v-if="currentUser" class="mb-6 flex justify-between items-center">
-      <h2 class="text-xl font-bold border-l-4 border-red-600 pl-3">ของส่งมอบ</h2>
+      <h2 class="text-xl font-bold border-l-4 border-red-600 pl-3 dark:text-white">ของส่งมอบ</h2>
       
       <div class="flex items-center gap-2">
         <!-- Edit Mode Toggle Button -->
@@ -11,8 +11,8 @@
           :class="[
             'px-4 py-2 rounded shadow-lg flex items-center gap-2 transition-colors',
             isEditMode 
-              ? 'bg-amber-500 text-white hover:bg-amber-600' 
-              : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+              ? 'bg-amber-500 text-white hover:bg-amber-600 dark:bg-amber-600 dark:hover:bg-amber-700' 
+              : 'bg-gray-200 text-gray-700 hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600'
           ]"
         >
           <i :class="isEditMode ? 'fa-solid fa-lock-open' : 'fa-solid fa-lock'"></i>
@@ -23,7 +23,7 @@
         <button 
           v-if="isEditMode"
           @click="modals.createBox = true" 
-          class="bg-black text-white px-4 py-2 rounded hover:bg-gray-800 shadow-lg flex items-center gap-2"
+          class="bg-black text-white px-4 py-2 rounded hover:bg-gray-800 shadow-lg flex items-center gap-2 dark:bg-red-600 dark:hover:bg-red-700"
         >
           <i class="fa-solid fa-plus"></i> สร้างรายการ
         </button>
@@ -32,23 +32,23 @@
 
     <!-- Guest Message -->
     <div v-if="!currentUser" class="mb-6">
-      <h2 class="text-xl font-bold border-l-4 border-red-600 pl-3">ของส่งมอบ</h2>
-      <p class="text-gray-500 mt-2 text-sm">กรุณาเข้าสู่ระบบเพื่อจัดการรายการ</p>
+      <h2 class="text-xl font-bold border-l-4 border-red-600 pl-3 dark:text-white">ของส่งมอบ</h2>
+      <p class="text-gray-500 mt-2 text-sm dark:text-gray-400">กรุณาเข้าสู่ระบบเพื่อจัดการรายการ</p>
     </div>
 
     <!-- Loading State -->
-    <div v-if="loading" class="text-center py-20 text-gray-400 font-bold animate-pulse">
+    <div v-if="loading" class="text-center py-20 text-gray-400 font-bold animate-pulse dark:text-gray-500">
       กำลังโหลดข้อมูล...
     </div>
 
     <!-- Empty State -->
     <div v-else-if="boxes.length === 0" class="text-center py-20">
-      <i class="fa-solid fa-box-open text-6xl text-gray-300 mb-4"></i>
-      <p class="text-gray-500">ยังไม่มีรายการของส่งมอบ</p>
+      <i class="fa-solid fa-box-open text-6xl text-gray-300 mb-4 dark:text-gray-600"></i>
+      <p class="text-gray-500 dark:text-gray-400">ยังไม่มีรายการของส่งมอบ</p>
       <button 
         v-if="currentUser"
         @click="modals.createBox = true" 
-        class="mt-4 bg-black text-white px-4 py-2 rounded hover:bg-gray-800"
+        class="mt-4 bg-black text-white px-4 py-2 rounded hover:bg-gray-800 dark:bg-red-600 dark:hover:bg-red-700"
       >
         <i class="fa-solid fa-plus"></i> สร้างรายการแรก
       </button>
@@ -66,7 +66,7 @@
           @drop="onBoxDrop($event, boxIndex)"
           @dragend="onBoxDragEnd"
           :class="[
-            'bg-white rounded-xl shadow-sm overflow-hidden transition-all duration-200',
+            'bg-white rounded-xl shadow-sm overflow-hidden transition-all duration-200 dark:bg-gray-800',
             draggingBoxIndex === boxIndex ? 'opacity-50 scale-[0.98]' : '',
             boxDragOverIndex === boxIndex && draggingBoxIndex !== boxIndex ? 'ring-2 ring-offset-2' : '',
             currentUser && isEditMode ? 'cursor-grab' : ''
@@ -94,7 +94,7 @@
             <div v-if="currentUser && isEditMode" class="flex items-center gap-1">
               <button 
                 @click.stop="openAddItemsModal(box)"
-                class="bg-green-500 text-white px-2 py-1 rounded text-xs hover:bg-green-600 flex items-center gap-1"
+                class="bg-green-500 text-white px-2 py-1 rounded text-xs hover:bg-green-600 flex items-center gap-1 dark:bg-green-600 dark:hover:bg-green-700"
               >
                 <i class="fa-solid fa-plus"></i> เพิ่ม
               </button>
@@ -132,7 +132,7 @@
                 @drop.stop="onItemDrop($event, boxIndex, itemIndex)"
                 @dragend="onItemDragEnd"
                 :class="[
-                  'relative bg-gray-50 rounded-lg p-2 border border-gray-200 transition-all duration-200',
+                  'relative bg-gray-50 rounded-lg p-2 border border-gray-200 transition-all duration-200 dark:bg-gray-700 dark:border-gray-600',
                   draggingItem?.boxIndex === boxIndex && draggingItem?.itemIndex === itemIndex ? 'opacity-50 scale-95' : '',
                   itemDragOver?.boxIndex === boxIndex && itemDragOver?.itemIndex === itemIndex ? 'border-red-400 border-2' : '',
                   currentUser && isEditMode ? 'cursor-grab hover:shadow-md' : ''
@@ -148,7 +148,7 @@
                 </button>
                 
                 <!-- Item Image (smaller) -->
-                <div class="aspect-square bg-gray-200 rounded overflow-hidden mb-1.5">
+                <div class="aspect-square bg-gray-200 rounded overflow-hidden mb-1.5 dark:bg-gray-600">
                   <img 
                     v-if="item.items?.image_url" 
                     :src="item.items.image_url" 
@@ -161,7 +161,7 @@
                 </div>
                 
                 <!-- Item Info (compact) -->
-                <h4 class="font-medium text-xs truncate" :title="item.items?.name">{{ item.items?.name }}</h4>
+                <h4 class="font-medium text-xs truncate dark:text-white" :title="item.items?.name">{{ item.items?.name }}</h4>
                 
                 <!-- Quantity Badge + Withdraw Button -->
                 <div class="mt-1.5 flex items-center gap-1">
@@ -169,8 +169,8 @@
                     :class="[
                       'inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-bold flex-1',
                       item.items?.quantity > 0 
-                        ? 'bg-green-100 text-green-700' 
-                        : 'bg-red-100 text-red-700'
+                        ? 'bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-400' 
+                        : 'bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-400'
                     ]"
                   >
                     {{ item.items?.quantity }}
@@ -179,7 +179,7 @@
                   <button 
                     v-if="currentUser && item.items?.quantity > 0"
                     @click.stop="openWithdrawModal(item.items)"
-                    class="bg-amber-500 text-white px-1.5 py-0.5 rounded text-xs hover:bg-amber-600 flex items-center gap-0.5"
+                    class="bg-amber-500 text-white px-1.5 py-0.5 rounded text-xs hover:bg-amber-600 flex items-center gap-0.5 dark:bg-amber-600 dark:hover:bg-amber-700"
                     title="เบิก"
                   >
                     <i class="fa-solid fa-arrow-right-from-bracket text-[10px]"></i>
@@ -199,18 +199,18 @@
           type="text" 
           v-model="createBoxForm.name" 
           placeholder="ชื่อรายการ (เช่น มกราคม 2567)" 
-          class="w-full border p-2 rounded focus:border-red-600 outline-none"
+          class="w-full border p-2 rounded focus:border-red-600 outline-none dark:bg-gray-700 dark:border-gray-600 dark:text-white"
         >
         <textarea 
           v-model="createBoxForm.description" 
           placeholder="คำอธิบาย (ไม่บังคับ)" 
           rows="3"
-          class="w-full border p-2 rounded focus:border-red-600 outline-none resize-none"
+          class="w-full border p-2 rounded focus:border-red-600 outline-none resize-none dark:bg-gray-700 dark:border-gray-600 dark:text-white"
         ></textarea>
         
         <!-- Color Picker -->
         <div>
-          <label class="block text-sm font-medium text-gray-700 mb-2">
+          <label class="block text-sm font-medium text-gray-700 mb-2 dark:text-gray-300">
             <i class="fa-solid fa-palette mr-1"></i> สีกล่อง
           </label>
           <div class="flex flex-wrap gap-2">
@@ -221,14 +221,14 @@
               @click="createBoxForm.headerColor = color.value"
               :class="[
                 'w-8 h-8 rounded-lg border-2 transition-all',
-                createBoxForm.headerColor === color.value ? 'ring-2 ring-offset-2 ring-gray-400 scale-110' : 'hover:scale-105'
+                createBoxForm.headerColor === color.value ? 'ring-2 ring-offset-2 ring-gray-400 scale-110 dark:ring-gray-300' : 'hover:scale-105'
               ]"
               :style="{ backgroundColor: color.value, borderColor: color.value }"
               :title="color.name"
             ></button>
           </div>
           <div class="mt-2 flex items-center gap-2">
-            <span class="text-sm text-gray-500">สีที่เลือก:</span>
+            <span class="text-sm text-gray-500 dark:text-gray-400">สีที่เลือก:</span>
             <div 
               class="w-6 h-6 rounded border"
               :style="{ backgroundColor: createBoxForm.headerColor }"
@@ -240,12 +240,12 @@
       
       <template #footer>
         <div class="flex justify-end gap-2">
-          <button @click="closeCreateBoxModal" class="text-gray-500 px-4 py-2">ยกเลิก</button>
+          <button @click="closeCreateBoxModal" class="text-gray-500 px-4 py-2 dark:text-gray-400">ยกเลิก</button>
           <button 
             @click="createBox" 
             :disabled="isProcessing || !createBoxForm.name.trim()" 
             :class="{'opacity-50 cursor-not-allowed': isProcessing || !createBoxForm.name.trim()}" 
-            class="bg-black text-white px-4 py-2 rounded flex items-center gap-2"
+            class="bg-black text-white px-4 py-2 rounded flex items-center gap-2 dark:bg-red-600 dark:hover:bg-red-700"
           >
             <i v-if="isProcessing" class="fa-solid fa-spinner fa-spin"></i>
             <span>สร้าง</span>
@@ -261,18 +261,18 @@
           type="text" 
           v-model="editBoxForm.name" 
           placeholder="ชื่อรายการ" 
-          class="w-full border p-2 rounded focus:border-red-600 outline-none"
+          class="w-full border p-2 rounded focus:border-red-600 outline-none dark:bg-gray-700 dark:border-gray-600 dark:text-white"
         >
         <textarea 
           v-model="editBoxForm.description" 
           placeholder="คำอธิบาย (ไม่บังคับ)" 
           rows="3"
-          class="w-full border p-2 rounded focus:border-red-600 outline-none resize-none"
+          class="w-full border p-2 rounded focus:border-red-600 outline-none resize-none dark:bg-gray-700 dark:border-gray-600 dark:text-white"
         ></textarea>
         
         <!-- Color Picker -->
         <div>
-          <label class="block text-sm font-medium text-gray-700 mb-2">
+          <label class="block text-sm font-medium text-gray-700 mb-2 dark:text-gray-300">
             <i class="fa-solid fa-palette mr-1"></i> สีกล่อง
           </label>
           <div class="flex flex-wrap gap-2">
@@ -283,14 +283,14 @@
               @click="editBoxForm.headerColor = color.value"
               :class="[
                 'w-8 h-8 rounded-lg border-2 transition-all',
-                editBoxForm.headerColor === color.value ? 'ring-2 ring-offset-2 ring-gray-400 scale-110' : 'hover:scale-105'
+                editBoxForm.headerColor === color.value ? 'ring-2 ring-offset-2 ring-gray-400 scale-110 dark:ring-gray-300' : 'hover:scale-105'
               ]"
               :style="{ backgroundColor: color.value, borderColor: color.value }"
               :title="color.name"
             ></button>
           </div>
           <div class="mt-2 flex items-center gap-2">
-            <span class="text-sm text-gray-500">สีที่เลือก:</span>
+            <span class="text-sm text-gray-500 dark:text-gray-400">สีที่เลือก:</span>
             <div 
               class="w-6 h-6 rounded border"
               :style="{ backgroundColor: editBoxForm.headerColor }"
@@ -302,12 +302,12 @@
       
       <template #footer>
         <div class="flex justify-end gap-2">
-          <button @click="modals.editBox = false" class="text-gray-500 px-4 py-2">ยกเลิก</button>
+          <button @click="modals.editBox = false" class="text-gray-500 px-4 py-2 dark:text-gray-400">ยกเลิก</button>
           <button 
             @click="updateBox" 
             :disabled="isProcessing || !editBoxForm.name.trim()" 
             :class="{'opacity-50 cursor-not-allowed': isProcessing || !editBoxForm.name.trim()}" 
-            class="bg-black text-white px-4 py-2 rounded flex items-center gap-2"
+            class="bg-black text-white px-4 py-2 rounded flex items-center gap-2 dark:bg-red-600 dark:hover:bg-red-700"
           >
             <i v-if="isProcessing" class="fa-solid fa-spinner fa-spin"></i>
             <span>บันทึก</span>
@@ -325,14 +325,14 @@
             type="text" 
             v-model="itemSearch" 
             placeholder="ค้นหาของชำร่วย..." 
-            class="w-full border p-2 pl-10 rounded focus:border-red-600 outline-none"
+            class="w-full border p-2 pl-10 rounded focus:border-red-600 outline-none dark:bg-gray-700 dark:border-gray-600 dark:text-white"
           >
           <i class="fa-solid fa-magnifying-glass absolute left-3 top-3 text-gray-400"></i>
         </div>
 
         <!-- Selected Items Preview -->
-        <div v-if="selectedItems.length > 0" class="bg-green-50 p-3 rounded-lg border border-green-200">
-          <p class="text-sm text-green-700 font-medium mb-2">
+        <div v-if="selectedItems.length > 0" class="bg-green-50 p-3 rounded-lg border border-green-200 dark:bg-green-900/20 dark:border-green-800">
+          <p class="text-sm text-green-700 font-medium mb-2 dark:text-green-400">
             <i class="fa-solid fa-check-circle"></i> 
             เลือกแล้ว {{ selectedItems.length }} รายการ
           </p>
@@ -340,10 +340,10 @@
             <span 
               v-for="itemId in selectedItems" 
               :key="itemId"
-              class="bg-white px-2 py-1 rounded text-xs flex items-center gap-1 border border-green-300"
+              class="bg-white px-2 py-1 rounded text-xs flex items-center gap-1 border border-green-300 dark:bg-gray-800 dark:border-gray-600 dark:text-white"
             >
               {{ getItemName(itemId) }}
-              <button @click="toggleItemSelection(itemId)" class="text-red-500 hover:text-red-700">
+              <button @click="toggleItemSelection(itemId)" class="text-red-500 hover:text-red-700 dark:hover:text-red-600">
                 <i class="fa-solid fa-times"></i>
               </button>
             </span>
@@ -351,29 +351,29 @@
         </div>
 
         <!-- Items List -->
-        <div class="max-h-80 overflow-y-auto border rounded-lg">
-          <div v-if="loadingItems" class="text-center py-8 text-gray-400">
+        <div class="max-h-80 overflow-y-auto border rounded-lg dark:border-gray-700">
+          <div v-if="loadingItems" class="text-center py-8 text-gray-400 dark:text-gray-500">
             <i class="fa-solid fa-spinner fa-spin text-2xl"></i>
           </div>
-          <div v-else-if="filteredStockItems.length === 0" class="text-center py-8 text-gray-400">
+          <div v-else-if="filteredStockItems.length === 0" class="text-center py-8 text-gray-400 dark:text-gray-500">
             <p>ไม่พบรายการที่มีสต็อค</p>
           </div>
-          <div v-else class="divide-y">
+          <div v-else class="divide-y dark:divide-gray-700">
             <label 
               v-for="item in filteredStockItems" 
               :key="item.id"
               :class="[
-                'flex items-center gap-3 p-3 cursor-pointer hover:bg-gray-50 transition',
-                selectedItems.includes(item.id) ? 'bg-green-50' : ''
+                'flex items-center gap-3 p-3 cursor-pointer hover:bg-gray-50 transition dark:hover:bg-gray-700/50',
+                selectedItems.includes(item.id) ? 'bg-green-50 dark:bg-green-900/20' : ''
               ]"
             >
               <input 
                 type="checkbox" 
                 :checked="selectedItems.includes(item.id)"
                 @change="toggleItemSelection(item.id)"
-                class="w-4 h-4 text-red-600 rounded focus:ring-red-500"
+                class="w-4 h-4 text-red-600 rounded focus:ring-red-500 dark:bg-gray-600 dark:border-gray-500 dark:checked:bg-red-600 dark:checked:border-red-600"
               >
-              <div class="w-12 h-12 bg-gray-200 rounded overflow-hidden flex-shrink-0">
+              <div class="w-12 h-12 bg-gray-200 rounded overflow-hidden flex-shrink-0 dark:bg-gray-600">
                 <img 
                   v-if="item.image_url" 
                   :src="item.image_url" 
@@ -385,8 +385,8 @@
                 </div>
               </div>
               <div class="flex-1 min-w-0">
-                <h4 class="font-medium truncate">{{ item.name }}</h4>
-                <p class="text-sm text-gray-500">
+                <h4 class="font-medium truncate dark:text-white">{{ item.name }}</h4>
+                <p class="text-sm text-gray-500 dark:text-gray-400">
                   คงเหลือ: 
                   <span class="text-green-600 font-bold">{{ item.quantity }}</span> ชิ้น
                 </p>
@@ -398,12 +398,12 @@
       
       <template #footer>
         <div class="flex justify-end gap-2">
-          <button @click="closeAddItemsModal" class="text-gray-500 px-4 py-2">ยกเลิก</button>
+          <button @click="closeAddItemsModal" class="text-gray-500 px-4 py-2 dark:text-gray-400">ยกเลิก</button>
           <button 
             @click="addItemsToBox" 
             :disabled="isProcessing || selectedItems.length === 0" 
             :class="{'opacity-50 cursor-not-allowed': isProcessing || selectedItems.length === 0}" 
-            class="bg-green-600 text-white px-4 py-2 rounded flex items-center gap-2"
+            class="bg-green-600 text-white px-4 py-2 rounded flex items-center gap-2 dark:bg-green-600 dark:hover:bg-green-700"
           >
             <i v-if="isProcessing" class="fa-solid fa-spinner fa-spin"></i>
             <span>เพิ่ม {{ selectedItems.length }} รายการ</span>
@@ -414,7 +414,7 @@
 
     <!-- Delete Confirmation Modal -->
     <Modal v-model="modals.deleteBox" title="ยืนยันการลบ" variant="danger">
-      <p class="text-gray-600">
+      <p class="text-gray-600 dark:text-gray-300">
         คุณต้องการลบ "<strong>{{ boxToDelete?.name }}</strong>" และรายการทั้งหมดภายในใช่หรือไม่?
       </p>
       <p class="text-red-500 text-sm mt-2">
@@ -423,7 +423,7 @@
       
       <template #footer>
         <div class="flex justify-end gap-2">
-          <button @click="modals.deleteBox = false" class="text-gray-500 px-4 py-2">ยกเลิก</button>
+          <button @click="modals.deleteBox = false" class="text-gray-500 px-4 py-2 dark:text-gray-400">ยกเลิก</button>
           <button 
             @click="deleteBox" 
             :disabled="isProcessing" 
@@ -439,7 +439,7 @@
 
     <!-- Reorder Result Modal -->
     <Modal v-model="modals.reorderResult" :title="reorderSuccess ? 'สำเร็จ' : 'เกิดข้อผิดพลาด'" :variant="reorderSuccess ? 'default' : 'danger'">
-      <p class="text-gray-600">
+      <p class="text-gray-600 dark:text-gray-300">
         <i v-if="reorderSuccess" class="fa-solid fa-check-circle text-green-500"></i>
         <i v-else class="fa-solid fa-times-circle text-red-500"></i>
         {{ reorderMessage }}
@@ -447,7 +447,7 @@
       
       <template #footer>
         <div class="flex justify-end">
-          <button @click="modals.reorderResult = false" class="bg-black text-white px-4 py-2 rounded">
+          <button @click="modals.reorderResult = false" class="bg-black text-white px-4 py-2 rounded dark:bg-red-600 dark:hover:bg-red-700">
             ตกลง
           </button>
         </div>

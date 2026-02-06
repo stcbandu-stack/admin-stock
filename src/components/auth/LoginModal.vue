@@ -1,11 +1,11 @@
 <template>
   <div v-if="isOpen" :class="['fixed inset-0 z-50 flex items-center justify-center p-4 transition-all duration-300', isLoggedIn ? 'bg-black bg-opacity-50 backdrop-blur-sm' : 'bg-gray-900 bg-opacity-90 backdrop-blur-md']" @click.self="isLoggedIn ? close() : null">
-    <div class="bg-white rounded-xl shadow-2xl w-full max-w-md overflow-hidden transform transition-all scale-100">
+    <div class="bg-white rounded-xl shadow-2xl w-full max-w-md overflow-hidden transform transition-all scale-100 dark:bg-gray-800">
       <div class="p-6">
         <div class="text-center mb-6">
           <img src="/STC-LOGO-RGB.svg" alt="Choice Logo" class="h-16 mx-auto mb-4" />
-          <h2 class="text-2xl font-bold text-gray-800">เข้าสู่ระบบ</h2>
-           <p class="text-gray-500 text-sm mt-3 leading-relaxed">
+          <h2 class="text-2xl font-bold text-gray-800 dark:text-white">เข้าสู่ระบบ</h2>
+           <p class="text-gray-500 text-sm mt-3 leading-relaxed dark:text-gray-400">
             ระบบจัดการของชำร่วย อีซูซุสงวนไทย สำหรับเจ้าหน้าที่เท่านั้น <br />
             กรุณาเข้าสู่ระบบก่อนใช้งาน <br />
             หากท่านไม่สามารถเข้าสู่ระบบได้ โปรดติดต่อแอดมิน
@@ -14,45 +14,45 @@
 
         <form @submit.prevent="handleLogin" class="space-y-4">
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Email</label>
+            <label class="block text-sm font-medium text-gray-700 mb-1 dark:text-gray-300">Email</label>
             <div class="relative">
-              <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-500">
+              <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-500 dark:text-gray-400">
                 <i class="fa-solid fa-envelope"></i>
               </span>
               <input 
                 v-model="email" 
                 type="email" 
                 required
-                class="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-black outline-none transition"
+                class="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-black outline-none transition dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:focus:ring-white dark:focus:border-white"
                 placeholder="admin@example.com"
               >
             </div>
           </div>
 
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Password</label>
+            <label class="block text-sm font-medium text-gray-700 mb-1 dark:text-gray-300">Password</label>
             <div class="relative">
-              <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-500">
+              <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-500 dark:text-gray-400">
                 <i class="fa-solid fa-lock"></i>
               </span>
               <input 
                 v-model="password" 
                 :type="showPassword ? 'text' : 'password'" 
                 required
-                class="w-full pl-10 pr-10 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-black outline-none transition"
+                class="w-full pl-10 pr-10 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-black outline-none transition dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:focus:ring-white dark:focus:border-white"
                 placeholder="••••••••"
               >
               <button 
                 type="button" 
                 @click="showPassword = !showPassword" 
-                class="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-500 hover:text-black focus:outline-none"
+                class="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-500 hover:text-black focus:outline-none dark:text-gray-400 dark:hover:text-white"
               >
                 <i :class="showPassword ? 'fa-solid fa-eye-slash' : 'fa-solid fa-eye'"></i>
               </button>
             </div>
           </div>
 
-          <div v-if="error" class="p-3 bg-red-50 text-red-600 text-sm rounded-lg flex items-start gap-2">
+          <div v-if="error" class="p-3 bg-red-50 text-red-600 text-sm rounded-lg flex items-start gap-2 dark:bg-red-900/20 dark:text-red-400">
             <i class="fa-solid fa-circle-exclamation mt-0.5"></i>
             <span>{{ error }}</span>
           </div>
@@ -60,31 +60,31 @@
           <button 
             type="submit" 
             :disabled="loading"
-            class="w-full bg-black text-white py-2.5 rounded-lg font-medium hover:bg-gray-800 focus:ring-4 focus:ring-gray-300 transition disabled:opacity-50 disabled:cursor-not-allowed flex justify-center items-center gap-2"
+            class="w-full bg-black text-white py-2.5 rounded-lg font-medium hover:bg-gray-800 focus:ring-4 focus:ring-gray-300 transition disabled:opacity-50 disabled:cursor-not-allowed flex justify-center items-center gap-2 dark:bg-white dark:text-black dark:hover:bg-gray-200 dark:focus:ring-gray-600"
           >
             <i v-if="loading" class="fa-solid fa-circle-notch fa-spin"></i>
             <span>{{ loading ? 'กำลังเข้าสู่ระบบ...' : 'เข้าสู่ระบบ' }}</span>
           </button>
 
           <div class="relative flex py-2 items-center">
-            <div class="flex-grow border-t border-gray-300"></div>
-            <span class="flex-shrink-0 mx-4 text-gray-400 text-xs">หรือ</span>
-            <div class="flex-grow border-t border-gray-300"></div>
+            <div class="flex-grow border-t border-gray-300 dark:border-gray-600"></div>
+            <span class="flex-shrink-0 mx-4 text-gray-400 text-xs dark:text-gray-500">หรือ</span>
+            <div class="flex-grow border-t border-gray-300 dark:border-gray-600"></div>
           </div>
 
           <button 
             type="button" 
             @click="handleGoogleLogin"
             :disabled="loading"
-            class="w-full bg-white text-gray-700 border border-gray-300 py-2.5 rounded-lg font-medium hover:bg-gray-50 focus:ring-4 focus:ring-gray-100 transition disabled:opacity-50 disabled:cursor-not-allowed flex justify-center items-center gap-2"
+            class="w-full bg-white text-gray-700 border border-gray-300 py-2.5 rounded-lg font-medium hover:bg-gray-50 focus:ring-4 focus:ring-gray-100 transition disabled:opacity-50 disabled:cursor-not-allowed flex justify-center items-center gap-2 dark:bg-gray-700 dark:text-white dark:border-gray-600 dark:hover:bg-gray-600 dark:focus:ring-gray-800"
           >
             <img src="/google-logo.svg" alt="Google" class="w-5 h-5" />
             <span>เข้าสู่ระบบด้วย Google</span>
           </button>
         </form>
       </div>
-      <div v-if="isLoggedIn" class="bg-gray-50 px-6 py-4 border-t border-gray-100 flex justify-end">
-        <button @click="close" class="text-gray-500 hover:text-gray-700 text-sm font-medium transition">
+      <div v-if="isLoggedIn" class="bg-gray-50 px-6 py-4 border-t border-gray-100 flex justify-end dark:bg-gray-800/50 dark:border-gray-700">
+        <button @click="close" class="text-gray-500 hover:text-gray-700 text-sm font-medium transition dark:text-gray-400 dark:hover:text-white">
           ยกเลิก
         </button>
       </div>

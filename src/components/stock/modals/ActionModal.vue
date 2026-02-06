@@ -3,41 +3,41 @@
     <div class="space-y-4">
       <!-- Date -->
       <div>
-        <label class="text-xs text-gray-500 font-bold">วันที่</label>
+        <label class="text-xs text-gray-500 font-bold dark:text-gray-400">วันที่</label>
         <input 
           type="date" 
           v-model="form.date" 
           :readonly="form.type === 'WITHDRAW'" 
-          :class="{'bg-gray-100 text-gray-500 cursor-not-allowed': form.type === 'WITHDRAW'}" 
-          class="w-full border p-2 rounded text-sm focus:border-red-600 outline-none"
+          :class="{'bg-gray-100 text-gray-500 cursor-not-allowed dark:bg-gray-700 dark:text-gray-400': form.type === 'WITHDRAW'}" 
+          class="w-full border p-2 rounded text-sm focus:border-red-600 outline-none dark:bg-gray-800 dark:border-gray-600 dark:text-white"
         >
       </div>
       
       <!-- Amount -->
       <div>
-        <label class="text-xs text-gray-500 font-bold">จำนวน</label>
+        <label class="text-xs text-gray-500 font-bold dark:text-gray-400">จำนวน</label>
         <input 
           type="number" 
           v-model="form.amount" 
           placeholder="จำนวน" 
-          class="w-full border p-2 rounded text-sm focus:border-red-600 outline-none"
+          class="w-full border p-2 rounded text-sm focus:border-red-600 outline-none dark:bg-gray-800 dark:border-gray-600 dark:text-white"
           min="1"
         >
       </div>
       
       <!-- Withdraw-specific fields -->
       <template v-if="form.type === 'WITHDRAW'">
-        <div class="space-y-3 border-t pt-3 mt-3">
+        <div class="space-y-3 border-t pt-3 mt-3 dark:border-gray-700">
           <input 
             type="text" 
             v-model="form.userName" 
             placeholder="ชื่อคนเบิก" 
-            class="w-full border p-2 rounded text-sm focus:border-red-600 outline-none"
+            class="w-full border p-2 rounded text-sm focus:border-red-600 outline-none dark:bg-gray-800 dark:border-gray-600 dark:text-white"
           >
           <div class="relative">
             <select 
               v-model="form.branch" 
-              class="w-full border p-2 rounded text-sm bg-white focus:border-red-600 outline-none"
+              class="w-full border p-2 rounded text-sm bg-white focus:border-red-600 outline-none dark:bg-gray-800 dark:border-gray-600 dark:text-white"
             >
               <option value="" disabled>-- เลือกสาขา --</option>
               <option value="บ้านดู่">บ้านดู่</option>
@@ -50,20 +50,20 @@
             type="text" 
             v-model="form.actName" 
             placeholder="ชื่อกิจกรรม" 
-            class="w-full border p-2 rounded text-sm focus:border-red-600 outline-none"
+            class="w-full border p-2 rounded text-sm focus:border-red-600 outline-none dark:bg-gray-800 dark:border-gray-600 dark:text-white"
           >
           <input 
             type="text" 
             v-model="form.actLoc" 
             placeholder="สถานที่" 
-            class="w-full border p-2 rounded text-sm focus:border-red-600 outline-none"
+            class="w-full border p-2 rounded text-sm focus:border-red-600 outline-none dark:bg-gray-800 dark:border-gray-600 dark:text-white"
           >
           <div>
-            <label class="text-xs text-gray-500 font-bold">วันที่จัดกิจกรรม</label>
+            <label class="text-xs text-gray-500 font-bold dark:text-gray-400">วันที่จัดกิจกรรม</label>
             <input 
               type="date" 
               v-model="form.actDate" 
-              class="w-full border p-2 rounded text-sm focus:border-red-600 outline-none"
+              class="w-full border p-2 rounded text-sm focus:border-red-600 outline-none dark:bg-gray-800 dark:border-gray-600 dark:text-white"
             >
           </div>
         </div>
@@ -71,19 +71,19 @@
       
       <!-- Note -->
       <div class="pt-2">
-        <label class="text-xs text-gray-500 font-bold">หมายเหตุ</label>
+        <label class="text-xs text-gray-500 font-bold dark:text-gray-400">หมายเหตุ</label>
         <input 
           type="text" 
           v-model="form.note" 
           placeholder="ระบุหมายเหตุ..." 
-          class="w-full border p-2 rounded text-sm focus:border-red-600 outline-none"
+          class="w-full border p-2 rounded text-sm focus:border-red-600 outline-none dark:bg-gray-800 dark:border-gray-600 dark:text-white"
         >
       </div>
     </div>
     
     <template #footer>
       <div class="flex justify-end gap-2">
-        <button @click="close" class="text-gray-500 px-4 py-2">ยกเลิก</button>
+        <button @click="close" class="text-gray-500 px-4 py-2 dark:text-gray-400">ยกเลิก</button>
         <button 
           @click="submit" 
           :disabled="isProcessing" 
